@@ -1,18 +1,14 @@
 import os
 from flask import Flask, request, jsonify, make_response
-from flask_sqlalchemy import SQLAlchemy
+# We are not using SQLAlchemy for this simple version, so it's removed.
 import random
 import string
 
 # The Flask object is now named 'application' to match what AWS expects
 application = Flask(__name__)
 
-# --- Database Configuration ---
-application.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
-application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(application)
-
-# ... All your database models (Team, Membership, etc.) would go here ...
+# --- In-memory DB for our live demo ---
+DB = { "teams": {}, "memberships": {}, "activity": {} }
 
 # --- CORS Handling ---
 @application.after_request
@@ -22,14 +18,27 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     return response
 
-# --- API Routes (now using @application.route) ---
+# Helper functions
+def generate_id(prefix, length=8):
+    return f"{prefix}_{''.join(random.choices(string.ascii_lowercase + string.digits, k=length))}"
 
-@application.route('/api/teams', methods=['GET'])
-def get_teams():
-    # This is a placeholder. In a real app, you'd query your database.
-    return jsonify({"teams": [{"id": "team1", "name": "Live Test Team", "code": "LIVE123", "memberCount": 1}]})
+def generate_team_code(length=6):
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
-# ... All your other routes would be updated to use @application.route ...
+# --- API Routes ---
+@application.route('/api/teams', methods=['POST', 'GET'])
+def handle_teams():
+    if request.method == 'GET':
+        return jsonify({"teams": list(DB['teams'].values())})
+    if request.method == 'POST':
+        data = request.get_json()
+        team_id = generate_id("team")
+        new_team = { "id": team_id, "name": data['name'], "code": generate_team_code(), "memberCount": 1 }
+        DB['teams'][team_id] = new_team
+        DB['memberships'][team_id] = [{"userId": "manager-01", "name": "Alex Manager", "role": "owner"}]
+        return jsonify(new_team)
+
+# (Add back other routes as needed from previous versions)
 
 # This is the main entry point for Gunicorn on Elastic Beanstalk
 if __name__ == '__main__':
