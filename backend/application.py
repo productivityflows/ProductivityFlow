@@ -4,16 +4,14 @@ from flask_sqlalchemy import SQLAlchemy
 import random
 import string
 
-# The Flask object must be named 'application' for Elastic Beanstalk
 application = Flask(__name__)
 
-# --- Database Configuration ---
-# Reads the connection URL from the environment variable you set in AWS
+# Database Configuration
 application.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(application)
 
-# --- Database Models ---
+# Database Models
 class Team(db.Model):
     id = db.Column(db.String(80), primary_key=True)
     name = db.Column(db.String(120), nullable=False)
@@ -22,12 +20,12 @@ class Team(db.Model):
 
 class Membership(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    team_id = db.Column(db.String(80), db.ForeignKey('team.id'), nullable=False)
+    team_id = db.Column(db.String(80), nullable=False)
     user_id = db.Column(db.String(80), nullable=False)
     user_name = db.Column(db.String(120), nullable=False)
     role = db.Column(db.String(50), nullable=False)
 
-# --- CORS Handling ---
+# CORS Handling
 @application.after_request
 def after_request(response):
     response.headers.add('Access-Control-Allow-Origin', '*')
@@ -35,15 +33,16 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     return response
 
-# --- Helper functions ---
+# Helper functions
 def generate_id(prefix, length=8):
     return f"{prefix}_{''.join(random.choices(string.ascii_lowercase + string.digits, k=length))}"
 
-# --- API Routes (now using the database) ---
+# API Routes
 @application.route('/')
 def health_check():
     return jsonify({"status": "healthy"}), 200
 
+# Add your other routes like /api/teams, /api/teams/join, etc. here...
 @application.route('/api/teams', methods=['POST', 'GET'])
 def handle_teams():
     if request.method == 'GET':
@@ -59,15 +58,10 @@ def handle_teams():
         db.session.commit()
         return jsonify({"id": new_team.id, "name": new_team.name, "code": new_team.code, "memberCount": 1})
 
-# ... all other routes would need to be updated to use the db session ...
 
-# --- Command to create database tables ---
+# This command allows us to create the tables from the command line
 @application.cli.command("create-db")
 def create_db_command():
     """Creates the database tables."""
-    with application.app_context():
-        db.create_all()
+    db.create_all()
     print("Database tables created!")
-
-if __name__ == '__main__':
-    application.run(debug=True, port=8888)
