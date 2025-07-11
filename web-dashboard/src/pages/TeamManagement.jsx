@@ -6,7 +6,7 @@ import { Badge } from '../components/ui/Badge';
 import { Users, Crown, Copy, UserPlus, TrendingUp, TrendingDown, Plus } from 'lucide-react';
 import EmployeeSummaryModal from '../components/EmployeeSummaryModal';
 
-const API_URL = "/api";
+const API_URL = "http://productivityflow-env.eba-ubkzaksh.us-east-2.elasticbeanstalk.com/";
 
 export default function TeamManagementPage() {
   const [teams, setTeams] = useState([]);

@@ -16,7 +16,7 @@ const Input = ({ icon, ...props }) => {
     );
 };
 
-const API_URL = "http://localhost:8888";
+const API_URL = "http://productivityflow-env.eba-ubkzaksh.us-east-2.elasticbeanstalk.com/";
 
 export default function EmployeeTracker({ onTeamJoin }) {
     const [name, setName] = useState('');
