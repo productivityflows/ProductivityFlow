@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import random
 import string
@@ -16,7 +16,7 @@ class Team(db.Model):
     id = db.Column(db.String(80), primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     code = db.Column(db.String(10), unique=True, nullable=False)
-    owner_id = db.Column(db.String(80), nullable=False)
+    # Add other fields as needed
 
 class Membership(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -25,64 +25,26 @@ class Membership(db.Model):
     user_name = db.Column(db.String(120), nullable=False)
     role = db.Column(db.String(50), nullable=False)
 
-# --- CORS Handling ---
-@application.after_request
-def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-    return response
-
-# --- Helper functions ---
-def generate_id(prefix, length=8):
-    return f"{prefix}_{''.join(random.choices(string.ascii_lowercase + string.digits, k=length))}"
-
 # --- API Routes ---
-@application.route('/')
-def health_check():
-    return jsonify({"status": "healthy"}), 200
-
 @application.route('/api/teams', methods=['POST', 'GET'])
 def handle_teams():
+    # This route will now work AFTER the db is initialized
     if request.method == 'GET':
         teams = Team.query.all()
-        return jsonify({"teams": [{"id": t.id, "name": t.name, "code": t.code, "memberCount": Membership.query.filter_by(team_id=t.id).count()} for t in teams]})
+        return jsonify({"teams": [{"id": t.id, "name": t.name, "code": t.code} for t in teams]})
     if request.method == 'POST':
-        data = request.get_json()
-        team_id = generate_id("team")
-        new_team = Team(id=team_id, name=data['name'], code=''.join(random.choices(string.ascii_uppercase + string.digits, k=6)), owner_id="manager-01")
-        db.session.add(new_team)
-        manager_membership = Membership(team_id=team_id, user_id="manager-01", user_name="Alex Manager", role="owner")
-        db.session.add(manager_membership)
-        db.session.commit()
-        return jsonify({"id": new_team.id, "name": new_team.name, "code": new_team.code, "memberCount": 1})
+        # ... POST logic here ...
+        return jsonify({"message": "Team created"})
 
-@application.route('/api/teams/<team_id>/members', methods=['GET'])
-def get_team_members(team_id):
-    members = Membership.query.filter_by(team_id=team_id).all()
-    return jsonify({"members": [{"userId": m.user_id, "name": m.user_name, "role": m.role} for m in members]})
+# ... Your other API routes ...
 
-@application.route('/api/teams/join', methods=['POST'])
-def join_team():
-    data = request.get_json()
-    user_name = data.get('name', 'New User')
-    team_code = data.get('team_code')
-    target_team = Team.query.filter_by(code=team_code).first()
-    if not target_team:
-        return jsonify({"error": "Invalid team code"}), 404
-
-    user_id = generate_id("user")
-    new_membership = Membership(team_id=target_team.id, user_id=user_id, user_name=user_name, role="member")
-    db.session.add(new_membership)
-    db.session.commit()
-
-    response_data = {"teamId": target_team.id, "teamName": target_team.name, "userId": user_id, "userName": user_name}
-    return jsonify(response_data)
-
-# --- Command to create database tables ---
-@application.cli.command("create-db")
-def create_db_command():
-    """Creates the database tables."""
-    with application.app_context():
-        db.create_all()
-    print("Database tables created!")
+# --- NEW: Manual Database Setup Route ---
+@application.route('/api/init-db', methods=['POST'])
+def init_db():
+    """A special endpoint to be called only once to create tables."""
+    try:
+        with application.app_context():
+            db.create_all()
+        return jsonify({"message": "Database tables created successfully!"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
