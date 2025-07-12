@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import random
@@ -8,12 +8,10 @@ import string
 application = Flask(__name__)
 CORS(application)
 
-# Database Configuration
 application.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(application)
 
-# Database Models
 class Team(db.Model):
     id = db.Column(db.String(80), primary_key=True)
     name = db.Column(db.String(120), nullable=False)
@@ -26,30 +24,33 @@ class Membership(db.Model):
     user_name = db.Column(db.String(120), nullable=False)
     role = db.Column(db.String(50), nullable=False)
 
-# API Routes
+def generate_id(prefix):
+    return f"{prefix}_{''.join(random.choices(string.ascii_lowercase + string.digits, k=8))}"
+
 @application.route('/')
 def health_check():
     return jsonify({"status": "healthy"}), 200
 
-@application.route('/api/teams', methods=['POST', 'GET'])
+@application.route('/api/teams', methods=['POST', 'GET', 'OPTIONS'])
 def handle_teams():
+    if request.method == 'OPTIONS':
+        return make_response("OK", 200)
     if request.method == 'GET':
         teams = Team.query.all()
         return jsonify({"teams": [{"id": t.id, "name": t.name, "code": t.code, "memberCount": Membership.query.filter_by(team_id=t.id).count()} for t in teams]})
     if request.method == 'POST':
         data = request.get_json()
-        team_id = f"team_{''.join(random.choices(string.ascii_lowercase + string.digits, k=8))}"
+        team_id = generate_id("team")
         new_team = Team(id=team_id, name=data['name'], code=''.join(random.choices(string.ascii_uppercase + string.digits, k=6)))
         db.session.add(new_team)
         db.session.commit()
-        return jsonify({"id": new_team.id, "name": new_team.name, "code": new_team.code, "memberCount": 0})
+        return jsonify({"id": new_team.id, "name": new_team.name, "code": new_team.code})
 
 # --- THIS IS THE FIX ---
-# We are adding 'OPTIONS' to the list of allowed methods for this route.
 @application.route('/api/teams/join', methods=['POST', 'OPTIONS'])
 def join_team():
     if request.method == 'OPTIONS':
-        return jsonify({'status': 'ok'}), 200
+        return make_response("OK", 200)
 
     data = request.get_json()
     user_name = data.get('name', 'New User')
@@ -57,12 +58,12 @@ def join_team():
     target_team = Team.query.filter_by(code=team_code).first()
     if not target_team:
         return jsonify({"error": "Invalid team code"}), 404
-
-    user_id = f"user_{''.join(random.choices(string.ascii_lowercase + string.digits, k=8))}"
+    
+    user_id = generate_id("user")
     new_membership = Membership(team_id=target_team.id, user_id=user_id, user_name=user_name, role="member")
     db.session.add(new_membership)
     db.session.commit()
-
+    
     response_data = {"teamId": target_team.id, "teamName": target_team.name, "userId": user_id, "userName": user_name}
     return jsonify(response_data)
 # --- END OF FIX ---
