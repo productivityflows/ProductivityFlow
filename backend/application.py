@@ -18,6 +18,7 @@ class Team(db.Model):
     id = db.Column(db.String(80), primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     code = db.Column(db.String(10), unique=True, nullable=False)
+    owner_id = db.Column(db.String(80), nullable=False)
 
 class Membership(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -39,10 +40,12 @@ def handle_teams():
     if request.method == 'POST':
         data = request.get_json()
         team_id = f"team_{''.join(random.choices(string.ascii_lowercase + string.digits, k=8))}"
-        new_team = Team(id=team_id, name=data['name'], code=''.join(random.choices(string.ascii_uppercase + string.digits, k=6)))
+        new_team = Team(id=team_id, name=data['name'], code=''.join(random.choices(string.ascii_uppercase + string.digits, k=6)), owner_id="manager-01")
         db.session.add(new_team)
+        manager_membership = Membership(team_id=team_id, user_id="manager-01", user_name="Alex Manager", role="owner")
+        db.session.add(manager_membership)
         db.session.commit()
-        return jsonify({"id": new_team.id, "name": new_team.name, "code": new_team.code, "memberCount": 0})
+        return jsonify({"id": new_team.id, "name": new_team.name, "code": new_team.code, "memberCount": 1})
 
 @application.route('/api/teams/join', methods=['POST'])
 def join_team():
@@ -52,10 +55,12 @@ def join_team():
     target_team = Team.query.filter_by(code=team_code).first()
     if not target_team:
         return jsonify({"error": "Invalid team code"}), 404
+    
     user_id = f"user_{''.join(random.choices(string.ascii_lowercase + string.digits, k=8))}"
     new_membership = Membership(team_id=target_team.id, user_id=user_id, user_name=user_name, role="member")
     db.session.add(new_membership)
     db.session.commit()
+    
     response_data = {"teamId": target_team.id, "teamName": target_team.name, "userId": user_id, "userName": user_name}
     return jsonify(response_data)
 
