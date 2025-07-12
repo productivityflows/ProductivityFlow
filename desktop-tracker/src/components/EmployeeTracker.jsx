@@ -16,7 +16,8 @@ const Input = ({ icon, ...props }) => {
     );
 };
 
-const API_URL = "https://productivityflow-backend.onrender.com/api";
+// Set to the BASE URL only
+const API_URL = "https://productivityflow-backend.onrender.com";
 
 export default function EmployeeTracker({ onTeamJoin }) {
     const [name, setName] = useState('');
@@ -35,6 +36,7 @@ export default function EmployeeTracker({ onTeamJoin }) {
         setError("");
 
         try {
+            // Add /api/ to the fetch call
             const response = await fetch(`${API_URL}/api/teams/join`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -60,13 +62,10 @@ export default function EmployeeTracker({ onTeamJoin }) {
                 <p className="text-gray-500">Enter your details to begin tracking</p>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
-                {/* THIS SECTION CREATES THE "FULL NAME" INPUT */}
                 <div>
                     <label className="text-sm font-medium text-gray-700">Full Name</label>
                     <Input icon={User} type="text" placeholder="Enter your full name" value={name} onChange={e => setName(e.target.value)} />
                 </div>
-                {/* END OF SECTION */}
-
                 <div>
                     <label className="text-sm font-medium text-gray-700">Team Code</label>
                     <Input icon={Shield} type="text" placeholder="Enter your team code" value={teamCode} onChange={e => setTeamCode(e.target.value.toUpperCase())} />

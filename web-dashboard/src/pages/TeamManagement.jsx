@@ -6,7 +6,8 @@ import { Badge } from '../components/ui/Badge';
 import { Users, Crown, Copy, UserPlus, TrendingUp, TrendingDown, Plus } from 'lucide-react';
 import EmployeeSummaryModal from '../components/EmployeeSummaryModal';
 
-const API_URL = "https://productivityflow-backend.onrender.com/api";
+// Set to the BASE URL only
+const API_URL = "https://productivityflow-backend.onrender.com";
 
 export default function TeamManagementPage() {
   const [teams, setTeams] = useState([]);
@@ -23,7 +24,8 @@ export default function TeamManagementPage() {
   const loadTeams = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}/teams`);
+      // Add /api/ to the fetch call
+      const response = await fetch(`${API_URL}/api/teams`);
       const data = await response.json();
       setTeams(data.teams);
       if (data.teams.length > 0 && !selectedTeam) {
@@ -37,26 +39,23 @@ export default function TeamManagementPage() {
   };
 
   const loadTeamMembers = async (teamId) => {
-    const response = await fetch(`${API_URL}/teams/${teamId}/members`);
+    // Add /api/ to the fetch call
+    const response = await fetch(`${API_URL}/api/teams/${teamId}/members`);
     const data = await response.json();
     setTeamMembers(data.members);
   };
 
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) return;
-    const response = await fetch(`${API_URL}/teams`, {
+    // Add /api/ to the fetch call
+    const response = await fetch(`${API_URL}/api/teams`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newTeamName })
     });
     const newTeam = await response.json();
-
-    // --- THIS IS THE FIX ---
-    // Add the new team to our existing list and select it immediately.
     setTeams(prevTeams => [...prevTeams, newTeam]);
     setSelectedTeam(newTeam);
-    // --- END OF FIX ---
-
     setNewTeamName("");
   };
 
@@ -72,6 +71,7 @@ export default function TeamManagementPage() {
   return (
     <>
       <div className="space-y-6">
+        {/* ... Rest of the JSX remains the same ... */}
         <h1 className="text-3xl font-bold tracking-tight">Team Management</h1>
         <Card>
             <CardHeader><CardTitle>Create a New Team</CardTitle></CardHeader>
