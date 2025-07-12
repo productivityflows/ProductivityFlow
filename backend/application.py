@@ -1,59 +1,80 @@
+import os
 from flask import Flask, request, jsonify, make_response
+from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 import random
 import string
 
 application = Flask(__name__)
+CORS(application) # Handles all permissions
 
-# --- CORS Handling ---
-# This decorator will attach the necessary headers to every response
-@application.after_request
-def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
-    return response
+# --- Database Configuration ---
+application.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(application)
 
-# --- In-memory Database ---
-DB = { "teams": {}, "memberships": {} }
+# --- Database Models ---
+class Team(db.Model):
+    id = db.Column(db.String(80), primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    code = db.Column(db.String(10), unique=True, nullable=False)
+    owner_id = db.Column(db.String(80), nullable=False)
+
+class Membership(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    team_id = db.Column(db.String(80), nullable=False)
+    user_id = db.Column(db.String(80), nullable=False)
+    user_name = db.Column(db.String(120), nullable=False)
+    role = db.Column(db.String(50), nullable=False)
 
 def generate_id(prefix):
     return f"{prefix}_{''.join(random.choices(string.ascii_lowercase + string.digits, k=8))}"
 
-def generate_team_code():
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-
 # --- API Routes ---
+@application.route('/')
+def health_check():
+    return jsonify({"status": "healthy"}), 200
 
-@application.route('/api/teams', methods=['POST', 'GET', 'OPTIONS'])
+@application.route('/api/teams', methods=['POST', 'GET'])
 def handle_teams():
-    if request.method == 'OPTIONS':
-        return make_response("OK", 200) # Handle pre-flight request
     if request.method == 'GET':
-        return jsonify({"teams": list(DB['teams'].values())})
+        teams = Team.query.all()
+        return jsonify({"teams": [{"id": t.id, "name": t.name, "code": t.code, "memberCount": Membership.query.filter_by(team_id=t.id).count()} for t in teams]})
     if request.method == 'POST':
         data = request.get_json()
         team_id = generate_id("team")
-        new_team = { "id": team_id, "name": data['name'], "code": generate_team_code(), "memberCount": 1 }
-        DB['teams'][team_id] = new_team
-        DB['memberships'][team_id] = [{"userId": "manager-01", "name": "Alex Manager", "role": "owner"}]
-        return jsonify(new_team)
+        new_team = Team(id=team_id, name=data['name'], code=''.join(random.choices(string.ascii_uppercase + string.digits, k=6)), owner_id="manager-01")
+        db.session.add(new_team)
+        manager_membership = Membership(team_id=team_id, user_id="manager-01", user_name="Alex Manager", role="owner")
+        db.session.add(manager_membership)
+        db.session.commit()
+        return jsonify({"id": new_team.id, "name": new_team.name, "code": new_team.code, "memberCount": 1})
 
-@application.route('/api/teams/join', methods=['POST', 'OPTIONS'])
+@application.route('/api/teams/join', methods=['POST'])
 def join_team():
-    if request.method == 'OPTIONS':
-        return make_response("OK", 200) # Handle pre-flight request
-
     data = request.get_json()
     user_name = data.get('name', 'New User')
     team_code = data.get('team_code')
-    target_team = next((team for team in DB['teams'].values() if team['code'] == team_code), None)
-
+    target_team = Team.query.filter_by(code=team_code).first()
     if not target_team:
         return jsonify({"error": "Invalid team code"}), 404
 
     user_id = generate_id("user")
-    DB['memberships'][target_team['id']].append({"userId": user_id, "name": user_name, "role": "member"})
-    target_team['memberCount'] += 1
+    new_membership = Membership(team_id=target_team.id, user_id=user_id, user_name=user_name, role="member")
+    db.session.add(new_membership)
+    db.session.commit()
 
-    response_data = {"teamId": target_team['id'], "teamName": target_team['name'], "userId": user_id, "userName": user_name}
+    response_data = {"teamId": target_team.id, "teamName": target_team.name, "userId": user_id, "userName": user_name}
     return jsonify(response_data)
+
+# --- THIS IS THE MISSING COMMAND DEFINITION ---
+@application.cli.command("create-db")
+def create_db_command():
+    """Creates the database tables."""
+    with application.app_context():
+        db.create_all()
+    print("Database tables created!")
+# --- END OF MISSING COMMAND DEFINITION ---
+
+if __name__ == '__main__':
+    application.run(debug=True, port=8888)
