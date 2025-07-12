@@ -1,60 +1,71 @@
+import os
 from flask import Flask, request, jsonify, make_response
+from flask_sqlalchemy import SQLAlchemy
 import random
 import string
 
 application = Flask(__name__)
 
+# --- Database Configuration ---
+application.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(application)
+
+# --- Database Models ---
+class Team(db.Model):
+    id = db.Column(db.String(80), primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    code = db.Column(db.String(10), unique=True, nullable=False)
+    owner_id = db.Column(db.String(80), nullable=False)
+
+class Membership(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    team_id = db.Column(db.String(80), db.ForeignKey('team.id'), nullable=False)
+    user_id = db.Column(db.String(80), nullable=False)
+    user_name = db.Column(db.String(120), nullable=False)
+    role = db.Column(db.String(50), nullable=False)
+
 # --- CORS Handling ---
-def _build_cors_preflight_response():
-    response = make_response()
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization")
-    response.headers.add('Access-Control-Allow-Methods', "GET,POST,OPTIONS")
+@application.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     return response
 
-def _corsify_actual_response(response):
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    return response
-
-DB = { "teams": {}, "memberships": {}, "activity": {} }
-
+# --- Helper functions ---
 def generate_id(prefix):
     return f"{prefix}_{''.join(random.choices(string.ascii_lowercase + string.digits, k=8))}"
 
-def generate_team_code():
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-
 # --- API Routes ---
+@application.route('/')
+def health_check():
+    return jsonify({"status": "healthy"}), 200
+
 @application.route('/api/teams', methods=['POST', 'GET', 'OPTIONS'])
 def handle_teams():
-    if request.method == 'OPTIONS':
-        return _build_cors_preflight_response()
+    if request.method == 'OPTIONS': return make_response()
     if request.method == 'GET':
-        return _corsify_actual_response(jsonify({"teams": list(DB['teams'].values())}))
+        teams = Team.query.all()
+        return jsonify({"teams": [{"id": t.id, "name": t.name, "code": t.code, "memberCount": Membership.query.filter_by(team_id=t.id).count()} for t in teams]})
     if request.method == 'POST':
         data = request.get_json()
         team_id = generate_id("team")
-        new_team = { "id": team_id, "name": data['name'], "code": generate_team_code(), "memberCount": 1 }
-        DB['teams'][team_id] = new_team
-        DB['memberships'][team_id] = [{"userId": "manager-01", "name": "Alex Manager", "role": "owner"}]
-        return _corsify_actual_response(jsonify(new_team))
+        new_team = Team(id=team_id, name=data['name'], code=''.join(random.choices(string.ascii_uppercase + string.digits, k=6)), owner_id="manager-01")
+        db.session.add(new_team)
+        manager_membership = Membership(team_id=team_id, user_id="manager-01", user_name="Alex Manager", role="owner")
+        db.session.add(manager_membership)
+        db.session.commit()
+        return jsonify({"id": new_team.id, "name": new_team.name, "code": new_team.code, "memberCount": 1})
 
-@application.route('/api/teams/join', methods=['POST', 'OPTIONS'])
-def join_team():
-    if request.method == 'OPTIONS':
-        return _build_cors_preflight_response()
-    data = request.get_json()
-    team_code = data.get('team_code')
-    user_name = data.get('name', 'New User')
-    target_team = next((team for team in DB['teams'].values() if team['code'] == team_code), None)
-    if not target_team:
-        return _corsify_actual_response(jsonify({"error": "Invalid team code"})), 404
+# --- THIS IS THE MISSING COMMAND DEFINITION ---
+@application.cli.command("create-db")
+def create_db_command():
+    """Creates the database tables."""
+    with application.app_context():
+        db.create_all()
+    print("Database tables created!")
+# --- END OF MISSING COMMAND DEFINITION ---
 
-    user_id = generate_id("user")
-    DB['memberships'][target_team['id']].append({"userId": user_id, "name": user_name, "role": "member"})
-    target_team['memberCount'] += 1
-
-    response_data = {"teamId": target_team['id'], "teamName": target_team['name'], "userId": user_id, "userName": user_name}
-    return _corsify_actual_response(jsonify(response_data))
-
-# All other routes should also handle OPTIONS if they accept POST/PUT etc.
+if __name__ == '__main__':
+    application.run(debug=True, port=8888)
