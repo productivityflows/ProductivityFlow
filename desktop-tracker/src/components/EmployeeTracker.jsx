@@ -16,7 +16,7 @@ const Input = ({ icon, ...props }) => {
     );
 };
 
-const API_URL = "https://productivityflow-backend.onrender.com";
+const API_URL = "https://productivityflow-backend.onrender.com/api";
 
 export default function EmployeeTracker({ onTeamJoin }) {
     const [name, setName] = useState('');

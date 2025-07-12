@@ -6,7 +6,7 @@ import { Badge } from '../components/ui/Badge';
 import { Users, Crown, Copy, UserPlus, TrendingUp, TrendingDown, Plus } from 'lucide-react';
 import EmployeeSummaryModal from '../components/EmployeeSummaryModal';
 
-const API_URL = "https://productivityflow-backend.onrender.com";
+const API_URL = "https://productivityflow-backend.onrender.com/api";
 
 export default function TeamManagementPage() {
   const [teams, setTeams] = useState([]);
