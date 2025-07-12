@@ -16,7 +16,7 @@ const Input = ({ icon, ...props }) => {
     );
 };
 
-// Set to the BASE URL only
+// This URL must point to your backend on Render
 const API_URL = "https://productivityflow-backend.onrender.com";
 
 export default function EmployeeTracker({ onTeamJoin }) {
@@ -36,7 +36,7 @@ export default function EmployeeTracker({ onTeamJoin }) {
         setError("");
 
         try {
-            // Add /api/ to the fetch call
+            // The fetch call now correctly constructs the full URL
             const response = await fetch(`${API_URL}/api/teams/join`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -46,7 +46,9 @@ export default function EmployeeTracker({ onTeamJoin }) {
                 })
             });
             const data = await response.json();
-            if (!response.ok) throw new Error(data.error);
+            if (!response.ok) {
+                throw new Error(data.error || "An unknown error occurred.");
+            }
             onTeamJoin(data);
         } catch (err) {
             setError(err.message);
