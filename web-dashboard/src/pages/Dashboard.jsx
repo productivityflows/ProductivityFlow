@@ -42,11 +42,24 @@ export default function DashboardPage() {
         console.log("Fetching teams...");
         
         const teamsResponse = await fetch(`${API_URL}/api/teams`);
+        
+        if (!teamsResponse.ok) {
+          throw new Error(`Teams API error: ${teamsResponse.status}`);
+        }
+        
         const teamsData = await teamsResponse.json();
         console.log("Teams data:", teamsData);
         
-        if (teamsData.teams && teamsData.teams.length > 0) {
-          const firstTeamId = teamsData.teams[0].id;
+        // Handle API errors gracefully
+        if (teamsData.error) {
+          console.error("Teams API error:", teamsData.error);
+          return;
+        }
+        
+        const teams = teamsData.teams || [];
+        
+        if (teams.length > 0) {
+          const firstTeamId = teams[0].id;
           console.log("Fetching stats for team:", firstTeamId);
           
           // Fetch both analytics and performance data
@@ -55,14 +68,24 @@ export default function DashboardPage() {
             fetch(`${API_URL}/api/teams/${firstTeamId}/performance`)
           ]);
           
-          const analyticsData = await analyticsResponse.json();
-          const performanceData = await performanceResponse.json();
+          // Check if responses are OK
+          if (analyticsResponse.ok) {
+            const analyticsData = await analyticsResponse.json();
+            console.log("Analytics data:", analyticsData);
+            setAnalytics(analyticsData);
+          } else {
+            console.error("Analytics API error:", analyticsResponse.status);
+          }
           
-          console.log("Analytics data:", analyticsData);
-          console.log("Performance data:", performanceData);
-          
-          setAnalytics(analyticsData);
-          setPerformance(performanceData);
+          if (performanceResponse.ok) {
+            const performanceData = await performanceResponse.json();
+            console.log("Performance data:", performanceData);
+            setPerformance(performanceData);
+          } else {
+            console.error("Performance API error:", performanceResponse.status);
+          }
+        } else {
+          console.log("No teams found");
         }
       } catch (error) {
         console.error("Error fetching analytics:", error);

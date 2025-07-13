@@ -32,25 +32,41 @@ export default function TeamManagementPage() {
     setIsLoading(true);
     try {
       const response = await fetch(`${API_URL}/api/teams`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
-      setTeams(data.teams);
+      console.log("Teams API response:", data);
+      
+      // Handle both error responses and success responses
+      if (data.error) {
+        console.error("API error:", data.error);
+        setTeams([]);
+        return;
+      }
+      
+      const teams = data.teams || [];
+      setTeams(teams);
       
       // Try to restore previously selected team
       const savedTeamId = localStorage.getItem('selectedTeamId');
-      if (savedTeamId && data.teams.length > 0) {
-        const savedTeam = data.teams.find(team => team.id === savedTeamId);
+      if (savedTeamId && teams.length > 0) {
+        const savedTeam = teams.find(team => team.id === savedTeamId);
         if (savedTeam) {
           setSelectedTeam(savedTeam);
         } else {
           // If saved team not found, select first team
-          setSelectedTeam(data.teams[0]);
+          setSelectedTeam(teams[0]);
         }
-      } else if (data.teams.length > 0 && !selectedTeam) {
+      } else if (teams.length > 0 && !selectedTeam) {
         // If no saved team and no current selection, select first team
-        setSelectedTeam(data.teams[0]);
+        setSelectedTeam(teams[0]);
       }
     } catch (error) {
       console.error("Failed to load teams:", error);
+      setTeams([]); // Set empty array to prevent crashes
     } finally {
       setIsLoading(false);
     }
