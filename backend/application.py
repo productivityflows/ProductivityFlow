@@ -59,8 +59,6 @@ class Membership(db.Model):
     user_id = db.Column(db.String(80), nullable=False)
     user_name = db.Column(db.String(120), nullable=False)
     role = db.Column(db.String(50), nullable=False)
-    # Make joined_at nullable for compatibility with existing data
-    joined_at = db.Column(db.DateTime, default=db.func.now(), nullable=True)
     
     # Temporarily remove unique constraint to avoid migration issues
     # __table_args__ = (db.UniqueConstraint('team_id', 'user_id', name='unique_team_user'),)
