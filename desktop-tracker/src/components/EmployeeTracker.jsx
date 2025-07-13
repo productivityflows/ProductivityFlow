@@ -18,6 +18,7 @@ const Input = ({ icon, ...props }) => {
 
 // Updated to use the correct backend URL
 const API_URL = "https://productivityflow-backend-v2.onrender.com";
+const VERSION = "2.1.0"; // Version indicator for debugging
 
 export default function EmployeeTracker({ onTeamJoin }) {
     const [name, setName] = useState('');
@@ -36,6 +37,9 @@ export default function EmployeeTracker({ onTeamJoin }) {
         setError("");
 
         try {
+            console.log(`[Tracker v${VERSION}] Making request to: ${API_URL}/api/teams/join`);
+            console.log(`[Tracker v${VERSION}] Request data:`, { name: name.trim(), team_code: teamCode.trim() });
+            
             const response = await fetch(`${API_URL}/api/teams/join`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -44,12 +48,18 @@ export default function EmployeeTracker({ onTeamJoin }) {
                     team_code: teamCode.trim() 
                 })
             });
+            
+            console.log(`[Tracker v${VERSION}] Response status:`, response.status);
+            
             const data = await response.json();
+            console.log(`[Tracker v${VERSION}] Response data:`, data);
+            
             if (!response.ok) {
                 throw new Error(data.error || "An unknown error occurred.");
             }
             onTeamJoin(data);
         } catch (err) {
+            console.error(`[Tracker v${VERSION}] Error:`, err);
             setError(err.message);
         } finally {
             setIsLoading(false);
@@ -61,6 +71,7 @@ export default function EmployeeTracker({ onTeamJoin }) {
             <div className="text-center">
                 <h1 className="text-2xl font-bold text-gray-800">Join Your Team</h1>
                 <p className="text-gray-500">Enter your details to begin tracking</p>
+                <p className="text-xs text-gray-400 mt-1">v{VERSION} • API: {API_URL}</p>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
