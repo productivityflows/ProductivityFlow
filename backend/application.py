@@ -317,20 +317,28 @@ def get_team_members(team_id):
         # Get activity data for each member
         member_data = []
         for member in members:
-            # Get today's activity
-            today = db.func.date(db.func.now())
-            activity = Activity.query.filter_by(
-                user_id=member.user_id, 
-                team_id=team_id,
-                date=today
-            ).first()
+            # Get today's activity (with fallback if Activity table doesn't exist)
+            try:
+                today = db.func.date(db.func.now())
+                activity = Activity.query.filter_by(
+                    user_id=member.user_id, 
+                    team_id=team_id,
+                    date=today
+                ).first()
+            except Exception as e:
+                logging.warning(f"Activity table may not exist: {e}")
+                activity = None
             
-            # Check if user is currently active
-            active_session = UserSession.query.filter_by(
-                user_id=member.user_id,
-                team_id=team_id,
-                is_active=True
-            ).first()
+            # Check if user is currently active (with fallback if UserSession table doesn't exist)
+            try:
+                active_session = UserSession.query.filter_by(
+                    user_id=member.user_id,
+                    team_id=team_id,
+                    is_active=True
+                ).first()
+            except Exception as e:
+                logging.warning(f"UserSession table may not exist: {e}")
+                active_session = None
             
             member_data.append({
                 "userId": member.user_id,
@@ -340,7 +348,7 @@ def get_team_members(team_id):
                 "unproductiveHours": activity.unproductive_hours if activity else 0,
                 "goalsCompleted": activity.goals_completed if activity else 0,
                 "isActive": active_session is not None,
-                "lastActive": activity.last_active.isoformat() if activity else None
+                "lastActive": activity.last_active.isoformat() if activity and activity.last_active else None
             })
         
         return jsonify({"members": member_data})
@@ -363,28 +371,41 @@ def get_team_stats(team_id):
         # Get today's date
         today = db.func.date(db.func.now())
         
-        # Get total team hours for today
-        total_hours = db.session.query(
-            db.func.sum(Activity.productive_hours + Activity.unproductive_hours)
-        ).filter_by(team_id=team_id, date=today).scalar() or 0
-        
-        # Get average productivity (productive hours / total hours)
-        total_productive = db.session.query(
-            db.func.sum(Activity.productive_hours)
-        ).filter_by(team_id=team_id, date=today).scalar() or 0
+        # Get total team hours for today (with fallback if Activity table doesn't exist)
+        try:
+            total_hours = db.session.query(
+                db.func.sum(Activity.productive_hours + Activity.unproductive_hours)
+            ).filter_by(team_id=team_id, date=today).scalar() or 0
+            
+            # Get average productivity (productive hours / total hours)
+            total_productive = db.session.query(
+                db.func.sum(Activity.productive_hours)
+            ).filter_by(team_id=team_id, date=today).scalar() or 0
+        except Exception as e:
+            logging.warning(f"Activity table may not exist: {e}")
+            total_hours = 0
+            total_productive = 0
         
         avg_productivity = (total_productive / total_hours * 100) if total_hours > 0 else 0
         
-        # Get total goals completed today
-        total_goals = db.session.query(
-            db.func.sum(Activity.goals_completed)
-        ).filter_by(team_id=team_id, date=today).scalar() or 0
+        # Get total goals completed today (with fallback if Activity table doesn't exist)
+        try:
+            total_goals = db.session.query(
+                db.func.sum(Activity.goals_completed)
+            ).filter_by(team_id=team_id, date=today).scalar() or 0
+        except Exception as e:
+            logging.warning(f"Activity table may not exist: {e}")
+            total_goals = 0
         
-        # Get active members count
-        active_members = UserSession.query.filter_by(
-            team_id=team_id,
-            is_active=True
-        ).count()
+        # Get active members count (with fallback if UserSession table doesn't exist)
+        try:
+            active_members = UserSession.query.filter_by(
+                team_id=team_id,
+                is_active=True
+            ).count()
+        except Exception as e:
+            logging.warning(f"UserSession table may not exist: {e}")
+            active_members = 0
         
         # Get total members count
         total_members = Membership.query.filter_by(team_id=team_id).count()
@@ -716,27 +737,38 @@ def get_team_performance(team_id):
         
         performance_data = []
         for member in members:
-            # Get recent activity data (last 7 days)
-            recent_activities = Activity.query.filter(
-                Activity.user_id == member.user_id,
-                Activity.team_id == team_id,
-                Activity.date >= datetime.now().date() - timedelta(days=7)
-            ).all()
+            # Get recent activity data (last 7 days) with fallback
+            try:
+                recent_activities = Activity.query.filter(
+                    Activity.user_id == member.user_id,
+                    Activity.team_id == team_id,
+                    Activity.date >= datetime.now().date() - timedelta(days=7)
+                ).all()
+                
+                total_productive = sum(a.productive_hours for a in recent_activities)
+                total_unproductive = sum(a.unproductive_hours for a in recent_activities)
+            except Exception as e:
+                logging.warning(f"Activity table may not exist: {e}")
+                total_productive = 0
+                total_unproductive = 0
             
-            total_productive = sum(a.productive_hours for a in recent_activities)
-            total_unproductive = sum(a.unproductive_hours for a in recent_activities)
             total_hours = total_productive + total_unproductive
             
             # Calculate efficiency percentage
             efficiency = (total_productive / total_hours * 100) if total_hours > 0 else 0
             
-            # Get task completion rate
-            total_tasks = Task.query.filter_by(team_id=team_id, assigned_to=member.user_id).count()
-            completed_tasks = Task.query.filter_by(
-                team_id=team_id, 
-                assigned_to=member.user_id, 
-                status='completed'
-            ).count()
+            # Get task completion rate with fallback
+            try:
+                total_tasks = Task.query.filter_by(team_id=team_id, assigned_to=member.user_id).count()
+                completed_tasks = Task.query.filter_by(
+                    team_id=team_id, 
+                    assigned_to=member.user_id, 
+                    status='completed'
+                ).count()
+            except Exception as e:
+                logging.warning(f"Task table may not exist: {e}")
+                total_tasks = 0
+                completed_tasks = 0
             
             task_completion_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
             
