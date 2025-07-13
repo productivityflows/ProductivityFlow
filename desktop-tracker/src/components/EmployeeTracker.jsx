@@ -36,7 +36,6 @@ export default function EmployeeTracker({ onTeamJoin }) {
         setError("");
 
         try {
-            // The fetch call now correctly constructs the full URL
             const response = await fetch(`${API_URL}/api/teams/join`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
