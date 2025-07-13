@@ -31,6 +31,7 @@ const StatCard = ({ title, value, icon, change, changeText, color }) => {
 
 export default function DashboardPage() {
   const [analytics, setAnalytics] = useState(null);
+  const [performance, setPerformance] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,11 +49,20 @@ export default function DashboardPage() {
           const firstTeamId = teamsData.teams[0].id;
           console.log("Fetching stats for team:", firstTeamId);
           
-          const analyticsResponse = await fetch(`${API_URL}/api/teams/${firstTeamId}/stats`);
+          // Fetch both analytics and performance data
+          const [analyticsResponse, performanceResponse] = await Promise.all([
+            fetch(`${API_URL}/api/teams/${firstTeamId}/stats`),
+            fetch(`${API_URL}/api/teams/${firstTeamId}/performance`)
+          ]);
+          
           const analyticsData = await analyticsResponse.json();
+          const performanceData = await performanceResponse.json();
+          
           console.log("Analytics data:", analyticsData);
+          console.log("Performance data:", performanceData);
           
           setAnalytics(analyticsData);
+          setPerformance(performanceData);
         }
       } catch (error) {
         console.error("Error fetching analytics:", error);
@@ -72,6 +82,71 @@ export default function DashboardPage() {
   const displayValue = (value, suffix = '') => {
     if (loading) return '...';
     return value !== null && value !== undefined ? `${value}${suffix}` : '0' + suffix;
+  };
+
+  const renderPerformanceSection = () => {
+    if (loading) {
+      return (
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <h4 className="font-semibold text-green-600 mb-2">🏆 Top Performers (Raise Candidates)</h4>
+            <div className="text-sm text-gray-500">Loading...</div>
+          </div>
+          <div>
+            <h4 className="font-semibold text-orange-600 mb-2">⚠️ Needs Improvement</h4>
+            <div className="text-sm text-gray-500">Loading...</div>
+          </div>
+        </div>
+      );
+    }
+
+    if (!performance || (!performance.topPerformers?.length && !performance.needsImprovement?.length)) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-gray-500">No performance data available yet.</p>
+          <p className="text-sm text-gray-400">Add some activity data to see performance analysis.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <h4 className="font-semibold text-green-600 mb-2">🏆 Top Performers (Raise Candidates)</h4>
+          <div className="space-y-2 text-sm">
+            {performance.topPerformers?.length > 0 ? (
+              performance.topPerformers.map((performer, index) => (
+                <div key={index} className="flex justify-between items-center p-2 bg-green-50 rounded">
+                  <span>{performer.userName}</span>
+                  <span className="text-green-600 font-medium">{performer.overallScore}% score</span>
+                </div>
+              ))
+            ) : (
+              <div className="text-gray-500 text-center py-4">
+                No top performers yet (need 90%+ score)
+              </div>
+            )}
+          </div>
+        </div>
+        <div>
+          <h4 className="font-semibold text-orange-600 mb-2">⚠️ Needs Improvement</h4>
+          <div className="space-y-2 text-sm">
+            {performance.needsImprovement?.length > 0 ? (
+              performance.needsImprovement.map((performer, index) => (
+                <div key={index} className="flex justify-between items-center p-2 bg-orange-50 rounded">
+                  <span>{performer.userName}</span>
+                  <span className="text-orange-600 font-medium">{performer.overallScore}% score</span>
+                </div>
+              ))
+            ) : (
+              <div className="text-gray-500 text-center py-4">
+                No underperformers (everyone above 60%)
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -118,6 +193,25 @@ export default function DashboardPage() {
       </div>
 
       {/* Other components like Activity and Goals would be built out here */}
+      
+      {/* Performance Analysis Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <TrendingUp className="mr-2 h-5 w-5" />
+            Performance Analysis
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {renderPerformanceSection()}
+          <div className="mt-4 p-3 bg-blue-50 rounded">
+            <p className="text-sm text-blue-700">
+              <strong>Analysis:</strong> Efficiency calculated as (Productive Hours / Total Hours) × 100. 
+              Consider raises for 90%+ efficiency, coaching for &lt;60% efficiency.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
       
       {/* Debug info */}
       <Card className="bg-gray-50">

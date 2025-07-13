@@ -21,14 +21,32 @@ export default function TeamManagementPage() {
   useEffect(() => { loadTeams(); }, []);
   useEffect(() => { if (selectedTeam) loadTeamMembers(selectedTeam.id); }, [selectedTeam]);
 
+  // Save selected team to localStorage
+  useEffect(() => {
+    if (selectedTeam) {
+      localStorage.setItem('selectedTeamId', selectedTeam.id);
+    }
+  }, [selectedTeam]);
+
   const loadTeams = async () => {
     setIsLoading(true);
     try {
-      // Add /api/ to the fetch call
       const response = await fetch(`${API_URL}/api/teams`);
       const data = await response.json();
       setTeams(data.teams);
-      if (data.teams.length > 0 && !selectedTeam) {
+      
+      // Try to restore previously selected team
+      const savedTeamId = localStorage.getItem('selectedTeamId');
+      if (savedTeamId && data.teams.length > 0) {
+        const savedTeam = data.teams.find(team => team.id === savedTeamId);
+        if (savedTeam) {
+          setSelectedTeam(savedTeam);
+        } else {
+          // If saved team not found, select first team
+          setSelectedTeam(data.teams[0]);
+        }
+      } else if (data.teams.length > 0 && !selectedTeam) {
+        // If no saved team and no current selection, select first team
         setSelectedTeam(data.teams[0]);
       }
     } catch (error) {
@@ -39,24 +57,36 @@ export default function TeamManagementPage() {
   };
 
   const loadTeamMembers = async (teamId) => {
-    // Add /api/ to the fetch call
-    const response = await fetch(`${API_URL}/api/teams/${teamId}/members`);
-    const data = await response.json();
-    setTeamMembers(data.members);
+    try {
+      const response = await fetch(`${API_URL}/api/teams/${teamId}/members`);
+      const data = await response.json();
+      setTeamMembers(data.members);
+    } catch (error) {
+      console.error("Failed to load team members:", error);
+      setTeamMembers([]);
+    }
   };
 
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) return;
-    // Add /api/ to the fetch call
-    const response = await fetch(`${API_URL}/api/teams`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newTeamName })
-    });
-    const newTeam = await response.json();
-    setTeams(prevTeams => [...prevTeams, newTeam]);
-    setSelectedTeam(newTeam);
-    setNewTeamName("");
+    try {
+      const response = await fetch(`${API_URL}/api/teams`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newTeamName })
+      });
+      const newTeam = await response.json();
+      setTeams(prevTeams => [...prevTeams, newTeam]);
+      setSelectedTeam(newTeam); // This will automatically save to localStorage
+      setNewTeamName("");
+    } catch (error) {
+      console.error("Failed to create team:", error);
+    }
+  };
+
+  const handleTeamSelect = (team) => {
+    setSelectedTeam(team);
+    // localStorage save happens automatically via useEffect
   };
 
   const handleMemberClick = (member) => {
@@ -89,7 +119,7 @@ export default function TeamManagementPage() {
               <CardHeader><CardTitle className="flex items-center"><Users className="mr-2 h-5 w-5"/>My Teams</CardTitle></CardHeader>
               <CardContent className="space-y-2">
                 {teams.map(team => (
-                  <button key={team.id} onClick={() => setSelectedTeam(team)} className={`w-full text-left p-3 rounded-lg border transition-colors ${selectedTeam?.id === team.id ? 'bg-indigo-100 border-indigo-300' : 'hover:bg-gray-100'}`}>
+                  <button key={team.id} onClick={() => handleTeamSelect(team)} className={`w-full text-left p-3 rounded-lg border transition-colors ${selectedTeam?.id === team.id ? 'bg-indigo-100 border-indigo-300' : 'hover:bg-gray-100'}`}>
                     <div className="flex justify-between items-center"><span className="font-semibold text-gray-800">{team.name}</span><Badge>Active</Badge></div>
                     <p className="text-sm text-gray-500">{team.memberCount} members</p>
                   </button>
