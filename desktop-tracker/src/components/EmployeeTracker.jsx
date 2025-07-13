@@ -16,8 +16,8 @@ const Input = ({ icon, ...props }) => {
     );
 };
 
-// This URL must point to your backend on Render
-const API_URL = "https://productivityflow-backend.onrender.com";
+// Updated to use the correct backend URL
+const API_URL = "https://productivityflow-backend-v2.onrender.com";
 
 export default function EmployeeTracker({ onTeamJoin }) {
     const [name, setName] = useState('');
