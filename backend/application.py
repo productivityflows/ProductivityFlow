@@ -12,14 +12,12 @@ logging.basicConfig(level=logging.INFO)
 application = Flask(__name__)
 
 # --- Enhanced CORS Configuration ---
+# More permissive CORS for all Vercel deployments
 CORS(application, 
-     origins=["https://web-dashboard-productivityflow.vercel.app", 
-              "https://desktop-tracker-productivityflow.vercel.app",
-              "http://localhost:3000",
-              "http://localhost:5173"],
+     origins="*",  # Allow all origins temporarily for debugging
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-     allow_headers=["Content-Type", "Authorization"],
-     supports_credentials=True)
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+     supports_credentials=False)
 
 # --- Database Configuration ---
 DATABASE_URL = os.environ.get('DATABASE_URL')
