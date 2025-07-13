@@ -35,6 +35,18 @@
 - Enhanced CORS configuration with specific methods and headers
 - Added localhost origins for development testing
 
+### 3. Deployment Error: Python 3.13 Compatibility Issue
+**Problem**: SQLAlchemy 2.0.23 incompatible with Python 3.13 causing AssertionError on deployment
+
+**Root Causes**:
+- SQLAlchemy 2.0.23 has a known bug with Python 3.13
+- No runtime.txt file to specify Python version
+
+**Fixes Applied**:
+- Updated SQLAlchemy from 2.0.23 to 2.0.35 (has Python 3.13 compatibility fixes)
+- Created runtime.txt file specifying Python 3.11.8 for better stability
+- This resolves the `AssertionError: Class <class 'sqlalchemy.sql.elements.SQLCoreOperations'>` error
+
 ## Key Code Changes
 
 ### Enhanced Database Configuration
@@ -77,6 +89,22 @@ if request.method == 'OPTIONS':
     response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
     return response
+```
+
+### Updated Dependencies
+```
+# requirements.txt
+Flask==2.3.3
+gunicorn==21.2.0
+psycopg2-binary==2.9.7
+SQLAlchemy==2.0.35
+Flask-SQLAlchemy==3.0.5
+Flask-Cors==4.0.0
+```
+
+```
+# runtime.txt
+python-3.11.8
 ```
 
 ## New Features Added
@@ -127,6 +155,10 @@ if request.method == 'OPTIONS':
 - Should successfully join teams with team code
 - No more 405 Method Not Allowed
 - Proper CORS handling for cross-origin requests
+
+### Deployment
+- Should deploy successfully on Render without Python compatibility errors
+- Stable Python 3.11.8 runtime with SQLAlchemy 2.0.35
 
 ## Monitoring
 
