@@ -1,0 +1,52 @@
+{
+  "name": "productivityflow-unified-installer",
+  "version": "1.0.0",
+  "description": "Unified installer for ProductivityFlow application suite with custom GUI",
+  "main": "scripts/create-installer-app.sh",
+  "scripts": {
+    "build": "../build-unified-installer.sh",
+    "build:test": "../build-unified-installer.sh --test",
+    "create-assets": "cd assets && ./create-placeholder-assets.sh",
+    "create-installer": "cd scripts && ./create-installer-app.sh",
+    "clean": "rm -rf ../temp-installer ../dist",
+    "help": "../build-unified-installer.sh --help"
+  },
+  "keywords": [
+    "installer",
+    "macos",
+    "dmg",
+    "tauri",
+    "gui",
+    "productivity"
+  ],
+  "author": "ProductivityFlow Team",
+  "license": "MIT",
+  "dependencies": {
+    "python3": ">=3.8",
+    "tkinter": "Built-in with Python"
+  },
+  "systemDependencies": {
+    "create-dmg": "Install via: brew install create-dmg",
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0",
+    "cargo": ">=1.60.0",
+    "rust": ">=1.60.0"
+  },
+  "optionalDependencies": {
+    "pillow": "pip3 install Pillow (for enhanced assets)"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/productivityflow.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/productivityflow/issues"
+  },
+  "homepage": "https://github.com/your-org/productivityflow#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "os": [
+    "darwin"
+  ]
+}
