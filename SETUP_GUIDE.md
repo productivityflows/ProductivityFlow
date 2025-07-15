@@ -10,6 +10,19 @@ This guide will help you set up and run the complete ProductivityFlow system wit
 - **Manager Dashboard**: Tauri desktop app for team analytics
 - **Database**: PostgreSQL (hosted on Render)
 
+## 🧪 Developer Test Codes
+
+**For quick testing and development, we have pre-generated test teams with known codes:**
+
+- **Dev Team Alpha**: Employee Code `VMQDC2`
+- **QA Test Team**: Employee Code `KX7T9U`  
+- **Demo Team**: Employee Code `8945LG`
+
+📋 **View all codes**: `cat DEVELOPER_CODES.md`
+🔄 **Generate new codes**: `./generate_dev_codes.sh`
+
+These codes allow you to immediately test both the Employee Tracker and Manager Dashboard apps without needing to create teams manually.
+
 ## 📋 Prerequisites
 
 ### System Requirements
