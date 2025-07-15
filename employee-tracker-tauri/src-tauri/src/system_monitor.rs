@@ -93,27 +93,27 @@ mod windows {
 #[cfg(target_os = "macos")]
 mod macos {
     use super::*;
-    use cocoa::appkit::{NSRunningApplication, NSWorkspace};
+    use cocoa::appkit::NSRunningApplication;
     use cocoa::base::{id, nil};
     use cocoa::foundation::{NSAutoreleasePool, NSString};
-    use core_foundation::base::TCFType;
-    use core_foundation::dictionary::CFDictionary;
-    use core_foundation::number::CFNumber;
-    use core_foundation::string::CFString;
-    use core_graphics::event::{CGEventSourceStateID, CGEventSourceGetSecondsSinceLastEventType};
-    use core_graphics::event_source::CGEventSource;
+    use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
+    use objc::{msg_send, sel, sel_impl};
 
     pub fn get_active_window_info() -> Result<WindowInfo, Box<dyn std::error::Error>> {
         unsafe {
             let _pool = NSAutoreleasePool::new(nil);
-            let workspace: id = NSWorkspace::sharedWorkspace(nil);
-            let frontmost_app: id = NSRunningApplication::frontmostApplication(workspace);
+            
+            // Get frontmost application using NSWorkspace
+            let workspace_class = objc::class!(NSWorkspace);
+            let workspace: id = msg_send![workspace_class, sharedWorkspace];
+            let frontmost_app: id = msg_send![workspace, frontmostApplication];
             
             if frontmost_app == nil {
                 return Err("No frontmost application found".into());
             }
             
-            let app_name: id = NSRunningApplication::localizedName(frontmost_app);
+            // Get app name
+            let app_name: id = msg_send![frontmost_app, localizedName];
             let app_name_str = if app_name != nil {
                 let app_name_nsstring = NSString::UTF8String(app_name);
                 std::ffi::CStr::from_ptr(app_name_nsstring)
@@ -123,9 +123,9 @@ mod macos {
                 "Unknown Application".to_string()
             };
 
-            // Note: Getting window title on macOS requires accessibility permissions
-            // and more complex code. For now, we'll use the app name as window title.
-            let window_title = app_name_str.clone();
+            // For window title, we'll use the app name as macOS doesn't easily provide window titles
+            // without more complex APIs
+            let window_title = format!("{} Window", app_name_str);
 
             Ok(WindowInfo {
                 app_name: app_name_str,
@@ -135,14 +135,17 @@ mod macos {
     }
 
     pub fn get_idle_time() -> Result<Duration, Box<dyn std::error::Error>> {
-        let idle_seconds = unsafe {
-            CGEventSourceGetSecondsSinceLastEventType(
-                CGEventSourceStateID::CombinedSessionState,
-                core_graphics::event::CGEventType::Null,
-            )
-        };
-        
-        Ok(Duration::from_secs_f64(idle_seconds))
+        unsafe {
+            let event_source = CGEventSource::new(CGEventSourceStateID::HIDSystemState)
+                .map_err(|_| "Failed to create CGEventSource")?;
+            
+            // Get idle time in seconds
+            let idle_time_seconds = event_source.seconds_since_last_event_type(
+                core_graphics::event::CGEventType::Null
+            );
+            
+            Ok(Duration::from_secs_f64(idle_time_seconds))
+        }
     }
 }
 
