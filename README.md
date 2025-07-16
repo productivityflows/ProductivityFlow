@@ -1,326 +1,513 @@
-# ProductivityFlow SaaS - Complete Setup Guide
+# ProductivityFlow - Complete Development & Deployment Guide
 
 ![ProductivityFlow Logo](https://via.placeholder.com/400x100/4338ca/ffffff?text=ProductivityFlow)
 
-## 🚀 Overview
+## 🚀 Project Overview
 
-ProductivityFlow is a comprehensive SaaS productivity tracking platform that provides:
+ProductivityFlow is a comprehensive SaaS productivity tracking platform consisting of:
 
-- **Employee Time Tracking** with AI-powered productivity reports
-- **Manager Dashboard** with real-time analytics and billing
+### Core Components
+- **Flask Backend API** - Python-based REST API with PostgreSQL database
+- **Employee Tracker Desktop App** - Tauri-based time tracking application 
+- **Manager Dashboard Desktop App** - Tauri-based analytics and management interface
+
+### Key Features
+- **Real-time Time Tracking** with screenshot capture
+- **AI-Powered Productivity Reports** using Claude AI
+- **Team Management** with invite codes
 - **Stripe Payment Integration** ($9.99/employee/month)
-- **Claude AI Integration** for hourly productivity summaries
-- **Desktop Applications** for Windows and Mac
-- **Auto-updater System** for seamless updates
+- **Auto-updater System** for seamless desktop app updates
 - **Enhanced Security** with encrypted API key storage
 
 ## 📋 Table of Contents
 
 1. [Prerequisites](#prerequisites)
-2. [Environment Setup](#environment-setup)
-3. [Backend Deployment](#backend-deployment)
-4. [Desktop Applications](#desktop-applications)
-5. [Payment Setup](#payment-setup)
-6. [AI Configuration](#ai-configuration)
-7. [Security Configuration](#security-configuration)
-8. [Auto-updater Setup](#auto-updater-setup)
-9. [Troubleshooting](#troubleshooting)
+2. [Local Development Setup](#local-development-setup)
+3. [Testing with Developer Codes](#testing-with-developer-codes)
+4. [Desktop Application Development](#desktop-application-development)
+5. [Automated Build & Release](#automated-build--release)
+6. [Production Deployment Steps](#production-deployment-steps)
+7. [API Configuration](#api-configuration)
+8. [Troubleshooting](#troubleshooting)
 
 ## 🔧 Prerequisites
 
-- **Python 3.9+** for backend
-- **Node.js 18+** and **npm** for frontend applications
-- **Rust** (latest stable) for Tauri desktop apps
-- **PostgreSQL** database (Render provides this)
-- **Redis** instance for rate limiting (optional)
-- **Stripe Account** for payment processing
-- **Claude API Account** for AI features
-- **Email SMTP** service (Gmail, SendGrid, etc.)
+Before starting development, ensure you have the following tools installed:
 
-## 🌍 Environment Setup
+### Required Software
+- **Python 3.9+** - For backend development
+- **Node.js 18+** and **npm** - For frontend applications
+- **Rust** (latest stable) - For Tauri desktop applications
+- **Git** - For version control
 
-### 1. Clone Repository
+### System Dependencies (Platform Specific)
+
+#### macOS
+```bash
+# Install Xcode Command Line Tools
+xcode-select --install
+
+# Install Homebrew (if not already installed)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+#### Windows
+```powershell
+# Install Rust
+# Download and run: https://forge.rust-lang.org/infra/rustup.html
+
+# Install Visual Studio Build Tools
+# Download and install Visual Studio Installer
+# Install "C++ build tools" workload
+
+# Install WebView2 (if not already installed)
+# Usually comes with Windows 11, download for Windows 10
+```
+
+#### Linux (Ubuntu/Debian)
+```bash
+# Install system dependencies
+sudo apt update
+sudo apt install -y libwebkit2gtk-4.0-dev build-essential curl wget libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+### Global Tools
+```bash
+# Install Tauri CLI globally
+npm install -g @tauri-apps/cli@^1.5.0
+
+# Verify installations
+python --version    # Should be 3.9+
+node --version      # Should be 18+
+npm --version       # Should be 8+
+rustc --version     # Should be latest stable
+tauri --version     # Should be 1.5.x
+```
+
+## 🔧 Local Development Setup
+
+### 1. Clone the Repository
 
 ```bash
 git clone <your-repository-url>
-cd productivity-flow-saas
+cd ProductivityFlow
 ```
 
-### 2. Backend Environment Variables
+### 2. Backend Setup
 
-Create a `.env` file in the `backend/` directory:
-
-```env
-# Database Configuration
-DATABASE_URL=postgresql://username:password@host:port/database
-
-# Security Keys (Generate new ones for production!)
-SECRET_KEY=your-super-secret-flask-key-here
-JWT_SECRET_KEY=your-jwt-secret-key-here
-ENCRYPTION_KEY=your-fernet-encryption-key-here
-
-# Stripe Configuration
-STRIPE_SECRET_KEY=sk_live_... # Your Stripe secret key
-STRIPE_PUBLISHABLE_KEY=pk_live_51RkaYhHHYuKoTuQQMGbXRhWQXBKR5JiFawdfBL7zrOHsay46EoEyYInWesRUUave2x68JY56lXFuYmFmREIHtLeP00YxMFIHTd
-
-# Claude AI Configuration
-CLAUDE_API_KEY=sk-ant-api03-your-actual-key-here
-CLAUDE_API_KEY_ENCRYPTED=  # Leave empty for first run
-
-# Email Configuration
-MAIL_SERVER=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USERNAME=your-email@gmail.com
-MAIL_PASSWORD=your-app-password
-MAIL_DEFAULT_SENDER=your-email@gmail.com
-
-# Frontend URL
-FRONTEND_URL=https://your-frontend-domain.com
-
-# Redis (Optional - for rate limiting)
-REDIS_URL=redis://localhost:6379
+#### Install Python Dependencies
+```bash
+cd backend
+pip install -r requirements.txt
 ```
 
-### 3. Generate Security Keys
-
-```python
-# Run this Python script to generate secure keys
-from cryptography.fernet import Fernet
-import secrets
-
-print("SECRET_KEY:", secrets.token_urlsafe(32))
-print("JWT_SECRET_KEY:", secrets.token_urlsafe(32))
-print("ENCRYPTION_KEY:", Fernet.generate_key().decode())
-```
-
-## 🚀 Backend Deployment
-
-### Local Development
+#### Set Up Environment Variables
+Create a `.env` file in the `backend` directory:
 
 ```bash
-cd backend/
-pip install -r requirements.txt
+# Backend Configuration
+FLASK_ENV=development
+SECRET_KEY=your-secret-key-for-development
+DATABASE_URL=postgresql://username:password@localhost:5432/productivityflow_dev
+
+# Optional: For full feature testing
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+ANTHROPIC_API_KEY=your_claude_api_key
+REDIS_URL=redis://localhost:6379
+
+# Email Configuration (for notifications)
+MAIL_SERVER=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USE_TLS=True
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-app-password
+```
+
+#### Database Setup (Optional - Use Local PostgreSQL)
+```bash
+# Install PostgreSQL locally (optional - can use SQLite for development)
+# macOS
+brew install postgresql
+brew services start postgresql
+
+# Ubuntu/Debian
+sudo apt install postgresql postgresql-contrib
+sudo systemctl start postgresql
+
+# Create development database
+createdb productivityflow_dev
+```
+
+#### Run the Backend
+```bash
+cd backend
 python application.py
 ```
 
-### Render Deployment
+The backend will start on `http://localhost:5000`
 
-1. **Create Render Account** at [render.com](https://render.com)
-
-2. **Create PostgreSQL Database**:
-   - Go to Render Dashboard
-   - Click "New" → "PostgreSQL"
-   - Choose a name (e.g., `productivityflow-db`)
-   - Copy the connection string
-
-3. **Create Web Service**:
-   - Click "New" → "Web Service"
-   - Connect your GitHub repository
-   - Select the `backend/` directory
-   - Configure:
-     - **Build Command**: `pip install -r requirements.txt`
-     - **Start Command**: `gunicorn application:application`
-     - **Environment**: `Python 3`
-
-4. **Add Environment Variables**:
-   - Add all variables from your `.env` file
-   - Use the PostgreSQL connection string as `DATABASE_URL`
-
-5. **Deploy**: Click "Create Web Service"
-
-## 💻 Desktop Applications
-
-### Building Applications
-
-#### Employee Tracker
+### 3. Employee Tracker Desktop App
 
 ```bash
-cd employee-tracker-tauri/
+# Open a new terminal window/tab
+cd employee-tracker-tauri
+
+# Install dependencies
 npm install
+
+# Start in development mode
+npm run tauri dev
+```
+
+The Employee Tracker app will launch automatically. It runs on port `1420` internally.
+
+### 4. Manager Dashboard Desktop App
+
+```bash
+# Open another new terminal window/tab
+cd manager-dashboard-tauri
+
+# Install dependencies
+npm install
+
+# Start in development mode
+npm run tauri dev
+```
+
+The Manager Dashboard app will launch automatically. It runs on port `1421` internally.
+
+## 🧪 Testing with Developer Codes
+
+The project includes pre-configured test teams for immediate testing without setting up payment systems.
+
+### Available Test Teams
+
+| Team | Employee Code | Description |
+|------|---------------|-------------|
+| Dev Team Alpha | `VMQDC2` | Primary development team |
+| QA Test Team | `KX7T9U` | Quality assurance testing |
+| Demo Team | `8945LG` | Product demonstrations |
+
+### Testing Procedure
+
+#### Employee App Testing
+1. Launch the Employee Tracker app (`npm run tauri dev` in `employee-tracker-tauri/`)
+2. Enter your name (any name for testing)
+3. Use one of the employee codes above (e.g., `VMQDC2`)
+4. Click "Join Team"
+5. The app will start tracking your activity
+
+#### Manager App Testing
+1. Launch the Manager Dashboard app (`npm run tauri dev` in `manager-dashboard-tauri/`)
+2. Enter your name (any name for testing)
+3. Use the same team code as an employee
+4. The app will show you as a manager if you're the first to join
+5. View team analytics and employee activity
+
+#### Backend API Testing
+```bash
+# Test backend health
+curl http://localhost:5000/health
+
+# Get all teams
+curl http://localhost:5000/api/teams
+
+# Join a team as employee
+curl -X POST http://localhost:5000/api/teams/join \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Test Employee", "team_code": "VMQDC2"}'
+```
+
+## 📱 Desktop Application Development
+
+### Development Commands
+
+#### Employee Tracker
+```bash
+cd employee-tracker-tauri
+
+# Development mode with hot reload
+npm run tauri dev
+
+# Build for production
 npm run tauri build
+
+# Build for specific platform
+npm run tauri build -- --target universal-apple-darwin  # macOS universal
+npm run tauri build -- --target x86_64-pc-windows-msvc   # Windows
 ```
 
 #### Manager Dashboard
-
 ```bash
-cd manager-dashboard-tauri/
-npm install
+cd manager-dashboard-tauri
+
+# Development mode with hot reload
+npm run tauri dev
+
+# Build for production
 npm run tauri build
+
+# Build for specific platform
+npm run tauri build -- --target universal-apple-darwin  # macOS universal
+npm run tauri build -- --target x86_64-pc-windows-msvc   # Windows
 ```
 
-### Build Output Locations
+### Application Configuration
 
-- **Windows**: `src-tauri/target/release/bundle/msi/`
-- **Mac**: `src-tauri/target/release/bundle/dmg/`
+Both applications are configured to connect to:
+- **Development**: `http://localhost:5000` (local backend)
+- **Production**: `https://productivityflow-backend-v3.onrender.com`
 
-### Cross-Platform Building
+To switch between environments, update the API base URL in the respective application's source code.
 
-For Windows builds on Mac/Linux:
+## 🚀 Automated Build & Release
+
+### GitHub Actions Workflow
+
+The project includes an automated build system that creates installers for both desktop applications.
+
+#### How It Works
+1. **Trigger**: Push a version tag (e.g., `git tag v1.0.0 && git push origin v1.0.0`)
+2. **Build Matrix**: Parallel jobs build on macOS (for .dmg) and Windows (for .msi)
+3. **Output**: GitHub Release with downloadable installers
+
+#### Creating a Release
 ```bash
-rustup target add x86_64-pc-windows-msvc
-npm run tauri build -- --target x86_64-pc-windows-msvc
+# Commit all changes
+git add .
+git commit -m "Release v1.0.0"
+
+# Create and push tag
+git tag v1.0.0
+git push origin main
+git push origin v1.0.0
+
+# GitHub Actions will automatically:
+# 1. Build both apps for macOS and Windows
+# 2. Create a GitHub Release
+# 3. Upload installers as release assets
 ```
 
-For Mac builds on Windows/Linux:
+#### Release Assets
+- `ProductivityFlow-Employee-Tracker-macOS.dmg`
+- `ProductivityFlow-Employee-Tracker-Windows.msi`
+- `ProductivityFlow-Manager-Dashboard-macOS.dmg`
+- `ProductivityFlow-Manager-Dashboard-Windows.msi`
+
+## 🌐 Production Deployment Steps
+
+### Phase 1: Quick Testing (Current State)
+The project is already configured for quick testing:
+
+✅ **Backend**: Deployed on Render (`https://productivityflow-backend-v3.onrender.com`)  
+✅ **Test Data**: Developer codes available for immediate testing  
+✅ **Build System**: GitHub Actions ready for installer creation  
+
+### Phase 2: Production Setup (Next Steps)
+
+#### Backend Environment Variables (Render.com)
+Configure these environment variables in your Render dashboard:
+
 ```bash
-rustup target add x86_64-apple-darwin
-npm run tauri build -- --target x86_64-apple-darwin
+# Required for Production
+SECRET_KEY=your-production-secret-key
+DATABASE_URL=postgresql://username:password@host:port/database
+
+# Payment Integration
+STRIPE_SECRET_KEY=sk_live_your_live_stripe_secret_key
+STRIPE_PUBLISHABLE_KEY=pk_live_your_live_stripe_publishable_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+
+# AI Features
+ANTHROPIC_API_KEY=your_claude_api_key
+
+# Email Notifications
+MAIL_SERVER=smtp.sendgrid.net
+MAIL_PORT=587
+MAIL_USE_TLS=True
+MAIL_USERNAME=apikey
+MAIL_PASSWORD=your_sendgrid_api_key
+
+# Redis (for rate limiting)
+REDIS_URL=redis://username:password@host:port
+
+# Security
+FLASK_ENV=production
 ```
 
-## 💳 Payment Setup
+#### Database Migration
+```bash
+# If using a new production database, run migrations
+cd backend
+python -c "from application import app, db; app.app_context().push(); db.create_all()"
+```
 
-### 1. Stripe Configuration
+#### Stripe Webhook Setup
+1. Log into Stripe Dashboard
+2. Go to Developers > Webhooks
+3. Add endpoint: `https://your-backend-url.onrender.com/stripe_webhook`
+4. Select events: `checkout.session.completed`, `invoice.payment_succeeded`, `customer.subscription.updated`
+5. Copy webhook secret to `STRIPE_WEBHOOK_SECRET` environment variable
 
-1. **Create Stripe Account** at [stripe.com](https://stripe.com)
-2. **Get API Keys**:
-   - Go to Developers → API Keys
-   - Copy Publishable and Secret keys
-3. **Configure Webhooks**:
-   - Go to Developers → Webhooks
-   - Add endpoint: `https://your-backend-url.com/stripe/webhook`
-   - Select events: `invoice.payment_succeeded`, `subscription.updated`
+#### Email Service Setup (SendGrid Example)
+1. Create SendGrid account
+2. Generate API key
+3. Verify sender identity
+4. Update email configuration in environment variables
 
-### 2. Pricing Setup
+### Phase 3: Desktop App Configuration
 
-The system automatically charges **$9.99 per employee per month**:
-- New employees are automatically added to billing
-- Removing employees reduces the charge
-- Billing is handled through Stripe subscriptions
+#### Update API Endpoints
+Before building production installers, update the API base URL in both desktop applications:
 
-### 3. Testing Payments
+1. **Employee Tracker**: Update API URL in `employee-tracker-tauri/src/`
+2. **Manager Dashboard**: Update API URL in `manager-dashboard-tauri/src/`
 
-Use Stripe test cards:
-- **Success**: `4242424242424242`
-- **Decline**: `4000000000000002`
+#### Build Production Installers
+```bash
+# Tag and push for automated build
+git tag v1.0.0
+git push origin v1.0.0
 
-## 🤖 AI Configuration
+# Or build locally
+cd employee-tracker-tauri && npm run tauri build
+cd manager-dashboard-tauri && npm run tauri build
+```
 
-### Claude API Setup
+## 🔑 API Configuration
 
-1. **Get Claude API Key**:
-   - Visit [console.anthropic.com](https://console.anthropic.com)
-   - Create account and get API key
-   - Add your API key to environment variables: `CLAUDE_API_KEY=sk-ant-api03-your-actual-key-here`
+### Required API Keys
 
-2. **Token Limits**:
-   - **Input**: ~2100 tokens per report
-   - **Output**: ~200 tokens per report
-   - **Cost Limit**: $2.00 per employee per day
-   - **Model**: Claude 3 Haiku ($0.25/1M input, $1.25/1M output)
+#### Stripe (Payment Processing)
+1. Create account at [stripe.com](https://stripe.com)
+2. Get test keys for development
+3. Get live keys for production
+4. Set up webhook endpoints
 
-3. **Report Generation**:
-   - Runs automatically every hour
-   - Analyzes productivity patterns
-   - Detects irregularities (auto-clickers, excessive idle time)
-   - Stores reports for 1 week maximum
+#### Claude AI (Productivity Reports)
+1. Create account at [anthropic.com](https://anthropic.com)
+2. Generate API key
+3. Add to environment variables
 
-## 🔒 Security Configuration
+#### Email Service (Notifications)
+Options:
+- **SendGrid**: Professional email service
+- **Gmail**: Use app passwords for development
+- **AWS SES**: Scalable email service
 
-### API Key Protection
+### Environment Variables Reference
 
-- Claude API key is encrypted using Fernet encryption
-- Stored in environment variables
-- Never exposed in logs or client-side code
+```bash
+# Core Backend
+SECRET_KEY=your-secret-key
+DATABASE_URL=postgresql://user:pass@host:port/db
+FLASK_ENV=production
 
-### Authentication
+# Payment Processing
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_PUBLISHABLE_KEY=pk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
 
-- JWT tokens with 7-day expiration
-- bcrypt password hashing
-- Rate limiting on all endpoints
-- Email verification required
+# AI Integration
+ANTHROPIC_API_KEY=your_claude_key
 
-### Database Security
+# Email Service
+MAIL_SERVER=smtp.provider.com
+MAIL_PORT=587
+MAIL_USE_TLS=True
+MAIL_USERNAME=your_username
+MAIL_PASSWORD=your_password
 
-- SQL injection protection via SQLAlchemy ORM
-- Connection pooling with encryption
-- Indexed queries for performance
-
-## 🔄 Auto-updater Setup
-
-### Version Management
-
-The auto-updater checks `/api/version` endpoint for:
-- Current version number
-- Download URLs for each platform
-- Build dates
-
-### Update Process
-
-1. **Desktop apps check for updates** on startup
-2. **Compare versions** with server
-3. **Download new versions** if available
-4. **Install and restart** automatically
-
-### Deployment Workflow
-
-1. **Build new versions** of desktop apps
-2. **Upload to static hosting** (S3, CDN, etc.)
-3. **Update version endpoint** with new URLs
-4. **Apps auto-update** on next startup
+# Caching & Rate Limiting
+REDIS_URL=redis://host:port
+```
 
 ## 🛠️ Troubleshooting
 
-### Common Issues
+### Common Development Issues
 
-#### Database Connection Errors
+#### Backend Won't Start
 ```bash
-# Check DATABASE_URL format
-postgresql://username:password@host:port/database
+# Check Python version
+python --version  # Must be 3.9+
 
-# Test connection
-python -c "import psycopg2; psycopg2.connect('YOUR_DATABASE_URL')"
+# Install dependencies
+pip install -r requirements.txt
+
+# Check for missing environment variables
+cd backend && python -c "from application import app"
 ```
 
-#### Stripe Webhook Issues
+#### Tauri Build Fails
 ```bash
-# Test webhook locally with Stripe CLI
-stripe listen --forward-to localhost:5000/stripe/webhook
+# Update Rust
+rustup update
+
+# Clear cache and rebuild
+npm run tauri build -- --debug
+
+# Check system dependencies (Linux)
+sudo apt install libwebkit2gtk-4.0-dev
 ```
 
-#### Claude API Errors
+#### Desktop App Can't Connect to Backend
+1. Verify backend is running on `http://localhost:5000`
+2. Check CORS configuration in `backend/application.py`
+3. Verify API endpoints in desktop app source code
+
+#### Database Connection Issues
 ```bash
-# Check API key and quota
-curl -H "x-api-key: YOUR_API_KEY" https://api.anthropic.com/v1/messages
+# Check if PostgreSQL is running
+pg_ctl status
+
+# Verify database exists
+psql -l | grep productivityflow
+
+# Check connection string format
+DATABASE_URL=postgresql://username:password@localhost:5432/database_name
 ```
 
-#### Email Sending Issues
-```bash
-# For Gmail, use App Passwords:
-# 1. Enable 2FA on Google Account
-# 2. Generate App Password
-# 3. Use App Password as MAIL_PASSWORD
-```
+### Production Issues
 
-### Performance Optimization
+#### Render Deployment Fails
+1. Check `runtime.txt` has correct Python version
+2. Verify `requirements.txt` is complete
+3. Check environment variables are set
+4. Review Render logs for specific errors
 
-#### Database Optimization
-- Indexes are automatically created on frequently queried columns
-- Connection pooling configured for high concurrency
-- Old reports automatically cleaned up weekly
+#### Payment Integration Issues
+1. Verify Stripe keys are correct environment (test vs live)
+2. Check webhook endpoint is accessible
+3. Verify webhook secret matches Stripe dashboard
+4. Test with Stripe's test card numbers
 
-#### Token Usage Optimization
-- Prompts limited to ~2100 input tokens
-- Responses capped at 200 output tokens
-- Daily spending limits enforced per employee
+#### Email Notifications Not Working
+1. Verify SMTP credentials
+2. Check if email service requires app passwords
+3. Test SMTP connection manually
+4. Verify sender email is verified with provider
 
-## 📞 Support
+### Getting Help
 
-### Development Team Contact
-- **Issues**: Create GitHub issues for bugs
-- **Features**: Submit feature requests via GitHub
-- **Security**: Email security issues privately
-
-### Client Support
-- **Setup Help**: Comprehensive documentation provided
-- **Training**: Video tutorials for managers and employees
-- **Billing**: Automatic Stripe billing support
-
-## 📄 License
-
-Proprietary software for ProductivityFlow SaaS platform.
+1. **Check Logs**: Always start with application logs
+2. **Environment Variables**: Verify all required variables are set
+3. **Dependencies**: Ensure all tools are latest compatible versions
+4. **Documentation**: Reference official docs for Tauri, Flask, Stripe, etc.
 
 ---
 
-**Ready to launch your productivity tracking SaaS!** 🚀
+## 📝 Developer Notes
 
-All systems are configured for scalability, security, and seamless user experience. The platform handles everything from user registration to automated billing and AI-powered insights.
+- **Backend URL**: `https://productivityflow-backend-v3.onrender.com`
+- **Test Codes**: See `DEVELOPER_CODES.md` for current test team codes
+- **Build Artifacts**: Generated in `src-tauri/target/` directories
+- **Log Files**: Check application logs for debugging information
+
+**Last Updated**: December 2024
