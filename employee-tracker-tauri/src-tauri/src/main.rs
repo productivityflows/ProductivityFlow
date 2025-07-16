@@ -110,7 +110,7 @@ async fn send_activity_data(
     
     // Send to backend
     let response = client
-        .post(&format!("https://productivityflow-backend-v3.onrender.com/api/teams/{}/activity", team_id))
+        .post(&format!("https://productivityflow-backend.onrender.com/api/teams/{}/activity", team_id))
         .header("Authorization", &format!("Bearer {}", token))
         .header("Content-Type", "application/json")
         .json(&payload)
