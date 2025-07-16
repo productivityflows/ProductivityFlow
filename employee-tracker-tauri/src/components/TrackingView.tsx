@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { 
@@ -8,8 +8,6 @@ import {
   Clock, 
   Activity, 
   LogOut, 
-  Minimize2, 
-  User,
   Building
 } from "lucide-react";
 

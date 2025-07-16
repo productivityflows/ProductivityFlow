@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { Progress } from '../components/ui/Progress';
-import { Users, Clock, TrendingUp, Target, Plus } from 'lucide-react';
+import { Users, Clock, TrendingUp, Target } from 'lucide-react';
 
 // Updated to use the correct backend URL
 const API_URL = "https://productivityflow-backend.onrender.com";

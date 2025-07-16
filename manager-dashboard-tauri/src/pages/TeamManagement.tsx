@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -30,7 +30,7 @@ export default function TeamManagementPage() {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [newTeamName, setNewTeamName] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -45,7 +45,7 @@ export default function TeamManagementPage() {
   }, [selectedTeam]);
 
   const loadTeams = async () => {
-    setIsLoading(true);
+    
     try {
       const response = await fetch(`${API_URL}/api/teams`);
       
@@ -84,7 +84,7 @@ export default function TeamManagementPage() {
       console.error("Failed to load teams:", error);
       setTeams([]); // Set empty array to prevent crashes
     } finally {
-      setIsLoading(false);
+      
     }
   };
 

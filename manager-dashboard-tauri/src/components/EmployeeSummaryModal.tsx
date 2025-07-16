@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { X, Clock, TrendingUp, Target } from 'lucide-react';
 import { Button } from './ui/Button';
 

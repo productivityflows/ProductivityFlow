@@ -111,10 +111,20 @@ mail = Mail(application)
 
 # --- Enhanced CORS Configuration ---
 CORS(application, 
-     origins="*",  # In production, specify exact origins
+     origins=["http://localhost:1420", "http://localhost:1421", "tauri://localhost", "*"],  # Allow Tauri origins
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
      supports_credentials=False)
+
+# Handle preflight OPTIONS requests for all routes
+@application.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = jsonify({'message': 'OK'})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,Accept,Origin")
+        response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
+        return response
 
 # --- Database Configuration ---
 DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -988,6 +998,146 @@ def create_team():
         logging.error(f"Error creating team: {e}")
         return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
+# --- Team Join & Activity Tracking Endpoints ---
+
+@application.route('/api/teams/join', methods=['POST'])
+@limiter.limit("10 per minute")
+def join_team():
+    """Join team using team code (for simple employee tracker without email)"""
+    try:
+        data = request.get_json()
+        team_code = data.get('team_code', '').strip().upper()
+        employee_name = data.get('employee_name', '').strip()
+        
+        if not team_code or not employee_name:
+            return jsonify({"error": "Team code and employee name are required"}), 400
+        
+        # Find team by code
+        team = Team.query.filter_by(employee_code=team_code).first()
+        if not team:
+            return jsonify({"error": "Invalid team code"}), 404
+        
+        # Generate a temporary user ID for the session
+        user_id = f"emp_{hashlib.md5((team_code + employee_name).encode()).hexdigest()[:8]}"
+        
+        # Check if user is already a member
+        existing_membership = Membership.query.filter_by(
+            user_id=user_id, 
+            team_id=team.id
+        ).first()
+        
+        if not existing_membership:
+            # Create membership for temporary user
+            membership = Membership(
+                team_id=team.id,
+                user_id=user_id,
+                user_name=employee_name,
+                role='employee'
+            )
+            db.session.add(membership)
+            db.session.commit()
+        
+        # Generate JWT token
+        token_payload = {
+            'user_id': user_id,
+            'team_id': team.id,
+            'role': 'employee',
+            'exp': datetime.utcnow() + timedelta(days=30)  # 30 day expiry
+        }
+        token = jwt.encode(token_payload, application.config['JWT_SECRET_KEY'], algorithm='HS256')
+        
+        return jsonify({
+            "success": True,
+            "token": token,
+            "user": {
+                "id": user_id,
+                "name": employee_name,
+                "role": "employee"
+            },
+            "team": {
+                "id": team.id,
+                "name": team.name,
+                "code": team.employee_code
+            }
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error joining team: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
+
+@application.route('/api/teams/<team_id>/activity', methods=['POST'])
+@limiter.limit("120 per minute")  # Higher limit for activity tracking
+def submit_activity(team_id):
+    """Submit activity data for a team member"""
+    try:
+        # Get authorization token
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({"error": "Missing or invalid authorization header"}), 401
+        
+        token = auth_header.split(' ')[1]
+        
+        try:
+            # Decode JWT token
+            payload = jwt.decode(token, application.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+            user_id = payload.get('user_id')
+            token_team_id = payload.get('team_id')
+            
+            # Verify team ID matches
+            if token_team_id != team_id:
+                return jsonify({"error": "Token team ID does not match request"}), 403
+                
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Invalid token"}), 401
+        
+        data = request.get_json()
+        
+        # Extract activity data
+        active_app = data.get('activeApp', '')
+        window_title = data.get('windowTitle', '')
+        idle_time = data.get('idleTime', 0.0)
+        productive_hours = data.get('productiveHours', 0.0)
+        unproductive_hours = data.get('unproductiveHours', 0.0)
+        goals_completed = data.get('goalsCompleted', 0)
+        
+        # Get or create today's activity record
+        today = datetime.utcnow().date()
+        activity = Activity.query.filter_by(
+            user_id=user_id,
+            team_id=team_id,
+            date=today
+        ).first()
+        
+        if not activity:
+            activity = Activity(
+                user_id=user_id,
+                team_id=team_id,
+                date=today
+            )
+            db.session.add(activity)
+        
+        # Update activity data
+        activity.active_app = active_app
+        activity.window_title = window_title
+        activity.idle_time = idle_time
+        activity.productive_hours = productive_hours
+        activity.unproductive_hours = unproductive_hours
+        activity.goals_completed = goals_completed
+        activity.last_active = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Activity data recorded successfully"
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error submitting activity: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
+
 # --- Version & Update Endpoints ---
 
 @application.route('/api/version', methods=['GET'])
@@ -1026,5 +1176,30 @@ def shutdown_scheduler():
 # Register shutdown handler
 atexit.register(shutdown_scheduler)
 
+# --- Database Initialization ---
+def init_db():
+    """Initialize database tables"""
+    try:
+        with application.app_context():
+            db.create_all()
+            logging.info("Database tables created successfully")
+    except Exception as e:
+        logging.error(f"Error creating database tables: {e}")
+
+# Initialize database when the app starts
+@application.before_first_request
+def create_tables():
+    """Create database tables before first request"""
+    init_db()
+
+# CLI command for manual database creation
+@application.cli.command('create-db')
+def create_db_command():
+    """Create database tables via CLI"""
+    init_db()
+    print("Database tables created!")
+
 if __name__ == '__main__':
+    # Initialize database tables
+    init_db()
     application.run(debug=True)

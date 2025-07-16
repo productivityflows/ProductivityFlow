@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { OnboardingView } from "./components/OnboardingView";
 import { TrackingView } from "./components/TrackingView";
 

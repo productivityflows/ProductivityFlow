@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { ShieldCheck, Database, Lock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 
