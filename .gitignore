@@ -16,6 +16,7 @@ private_keys/
 *.pem
 *.key
 *.crt
+API_KEYS_AND_CREDENTIALS.md
 
 # Database
 *.db
