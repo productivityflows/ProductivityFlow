@@ -1,0 +1,15 @@
+/workspace/manager-dashboard-tauri/src-tauri/target/debug/deps/libmarkup5ever-26a53242d35be7ff.rmeta: /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/lib.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/data/mod.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/interface/mod.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/interface/tree_builder.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/serialize.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/util/buffer_queue.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/util/smallcharset.rs /workspace/manager-dashboard-tauri/src-tauri/target/debug/build/markup5ever-279bead4ba0249b4/out/generated.rs /workspace/manager-dashboard-tauri/src-tauri/target/debug/build/markup5ever-279bead4ba0249b4/out/named_entities.rs
+
+/workspace/manager-dashboard-tauri/src-tauri/target/debug/deps/markup5ever-26a53242d35be7ff.d: /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/lib.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/data/mod.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/interface/mod.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/interface/tree_builder.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/serialize.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/util/buffer_queue.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/util/smallcharset.rs /workspace/manager-dashboard-tauri/src-tauri/target/debug/build/markup5ever-279bead4ba0249b4/out/generated.rs /workspace/manager-dashboard-tauri/src-tauri/target/debug/build/markup5ever-279bead4ba0249b4/out/named_entities.rs
+
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/lib.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/data/mod.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/interface/mod.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/interface/tree_builder.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/serialize.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/util/buffer_queue.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/markup5ever-0.11.0/util/smallcharset.rs:
+/workspace/manager-dashboard-tauri/src-tauri/target/debug/build/markup5ever-279bead4ba0249b4/out/generated.rs:
+/workspace/manager-dashboard-tauri/src-tauri/target/debug/build/markup5ever-279bead4ba0249b4/out/named_entities.rs:
+
+# env-dep:OUT_DIR=/workspace/manager-dashboard-tauri/src-tauri/target/debug/build/markup5ever-279bead4ba0249b4/out

@@ -1,0 +1,16 @@
+/workspace/manager-dashboard-tauri/src-tauri/target/debug/deps/libzip-aefdcc83e3856a65.rmeta: /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/lib.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/compression.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/cp437.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/crc32.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/read.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/read/stream.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/result.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/spec.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/types.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/write.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/zipcrypto.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/unstable.rs
+
+/workspace/manager-dashboard-tauri/src-tauri/target/debug/deps/zip-aefdcc83e3856a65.d: /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/lib.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/compression.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/cp437.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/crc32.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/read.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/read/stream.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/result.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/spec.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/types.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/write.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/zipcrypto.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/unstable.rs
+
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/lib.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/compression.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/cp437.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/crc32.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/read.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/read/stream.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/result.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/spec.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/types.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/write.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/zipcrypto.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/zip-0.6.6/src/unstable.rs:

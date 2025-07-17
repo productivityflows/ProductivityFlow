@@ -1,0 +1,8 @@
+/workspace/employee-tracker-tauri/src-tauri/target/debug/deps/libtauri_winres-1aa2d4eccf948283.rmeta: /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/tauri-winres-0.1.1/src/lib.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/tauri-winres-0.1.1/src/helpers.rs
+
+/workspace/employee-tracker-tauri/src-tauri/target/debug/deps/libtauri_winres-1aa2d4eccf948283.rlib: /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/tauri-winres-0.1.1/src/lib.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/tauri-winres-0.1.1/src/helpers.rs
+
+/workspace/employee-tracker-tauri/src-tauri/target/debug/deps/tauri_winres-1aa2d4eccf948283.d: /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/tauri-winres-0.1.1/src/lib.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/tauri-winres-0.1.1/src/helpers.rs
+
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/tauri-winres-0.1.1/src/lib.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/tauri-winres-0.1.1/src/helpers.rs:

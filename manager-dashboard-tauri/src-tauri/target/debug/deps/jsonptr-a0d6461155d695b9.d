@@ -1,0 +1,14 @@
+/workspace/manager-dashboard-tauri/src-tauri/target/debug/deps/libjsonptr-a0d6461155d695b9.rmeta: /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/lib.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/pointer.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/token.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/error.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/assign.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/delete.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/resolve.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/prelude.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/tokens.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/../README.md
+
+/workspace/manager-dashboard-tauri/src-tauri/target/debug/deps/jsonptr-a0d6461155d695b9.d: /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/lib.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/pointer.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/token.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/error.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/assign.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/delete.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/resolve.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/prelude.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/tokens.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/../README.md
+
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/lib.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/pointer.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/token.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/error.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/assign.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/delete.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/resolve.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/prelude.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/tokens.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/jsonptr-0.4.7/src/../README.md:

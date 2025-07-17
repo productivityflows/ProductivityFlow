@@ -1,0 +1,11 @@
+/workspace/manager-dashboard-tauri/src-tauri/target/debug/deps/libwl_clipboard_rs-523c3100438d0858.rmeta: /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/lib.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/common.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/data_control.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/seat_data.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/copy.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/paste.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/utils.rs
+
+/workspace/manager-dashboard-tauri/src-tauri/target/debug/deps/wl_clipboard_rs-523c3100438d0858.d: /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/lib.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/common.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/data_control.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/seat_data.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/copy.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/paste.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/utils.rs
+
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/lib.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/common.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/data_control.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/seat_data.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/copy.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/paste.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/wl-clipboard-rs-0.9.2/src/utils.rs:
