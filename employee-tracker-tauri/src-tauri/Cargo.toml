@@ -7,37 +7,14 @@ license = ""
 repository = ""
 default-run = "employee-tracker-tauri"
 edition = "2021"
-rust-version = "1.60"
 
 [build-dependencies]
-tauri-build = { version = "1.5.0", features = [] }
+tauri-build = { version = "1.5", features = [] }
 
 [dependencies]
-serde_json = "1.0"
+tauri = { version = "1.5", features = [ "shell-open", "system-tray" ] }
 serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "1.5.4", features = [ "window-unminimize", "window-start-dragging", "window-unmaximize", "window-hide", "os-all", "window-show", "notification-all", "global-shortcut-all", "window-close", "http-all", "window-minimize", "window-maximize", "shell-open", "system-tray", "updater"] }
-tokio = { version = "1.0", features = ["full"] }
-reqwest = { version = "0.11", features = ["json"] }
-chrono = { version = "0.4", features = ["serde"] }
-
-# Platform-specific dependencies for system monitoring
-[target.'cfg(target_os = "windows")'.dependencies]
-winapi = { version = "0.3", features = ["winuser", "processthreadsapi", "psapi"] }
-widestring = "1.0"
-
-[target.'cfg(target_os = "macos")'.dependencies]
-core-foundation = "0.9"
-core-graphics = "0.23"
-cocoa = "0.25"
-
-[target.'cfg(target_os = "linux")'.dependencies]
-x11 = { version = "2.19", features = ["xlib", "xss"] }
+serde_json = "1.0"
 
 [features]
-# by default Tauri runs in production mode
-# when `tauri dev` runs it is executed with `cargo run --no-default-features` if `devPath` is an URL
-default = [ "custom-protocol" ]
-# this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.
-# If you use cargo directly instead of tauri's cli you can use this feature flag to switch between tauri's `dev` and `build` modes.
-# DO NOT REMOVE!!
-custom-protocol = [ "tauri/custom-protocol" ]
+custom-protocol = ["tauri/custom-protocol"]

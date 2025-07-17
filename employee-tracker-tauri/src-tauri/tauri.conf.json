@@ -3,8 +3,7 @@
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
     "devPath": "http://localhost:1420",
-    "distDir": "../dist",
-    "withGlobalTauri": false
+    "distDir": "../dist"
   },
   "package": {
     "productName": "ProductivityFlow Tracker",
@@ -12,48 +11,7 @@
   },
   "tauri": {
     "allowlist": {
-      "all": false,
-      "shell": {
-        "all": false,
-        "open": true
-      },
-      "window": {
-        "all": false,
-        "close": true,
-        "hide": true,
-        "maximize": true,
-        "minimize": true,
-        "unmaximize": true,
-        "unminimize": true,
-        "show": true,
-        "startDragging": true,
-        "print": false
-      },
-      "notification": {
-        "all": true
-      },
-      "globalShortcut": {
-        "all": true
-      },
-      "os": {
-        "all": true
-      },
-      "fs": {
-        "all": false,
-        "readFile": false,
-        "writeFile": false,
-        "readDir": false,
-        "copyFile": false,
-        "createDir": false,
-        "removeDir": false,
-        "removeFile": false,
-        "renameFile": false,
-        "exists": false
-      },
-      "http": {
-        "all": true,
-        "request": true
-      }
+      "all": true
     },
     "bundle": {
       "active": true,
@@ -72,8 +30,7 @@
     },
     "systemTray": {
       "iconPath": "icons/32x32.png",
-      "iconAsTemplate": true,
-      "menuOnLeftClick": false
+      "iconAsTemplate": true
     },
     "updater": {
       "active": true,
@@ -81,17 +38,13 @@
         "https://github.com/productivityflows/ProductivityFlow/releases/latest/download/latest.json"
       ],
       "dialog": true,
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY5NkEyMzVBMEY3OENCQjMKUldSTjdYR2NzOHg5cVNyS3VVYXh0Nk5ianphdldzU2Z6Qk5yTm81ekp0TjF6MzZrRWpFUGVuawogCg=="
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY5NkEyMzVBMEY3OENCQjMKUldSTjdYR2NzOHg5cVNyS3VVYXh0Nk5ianphdldzU2Z6Qk5yTm81ekp0TjF6MzZrRWpFUGVuaw=="
     },
     "windows": [
       {
-        "fullscreen": false,
-        "resizable": true,
         "title": "ProductivityFlow Tracker",
         "width": 400,
-        "height": 600,
-        "minWidth": 350,
-        "minHeight": 500
+        "height": 600
       }
     ]
   }
