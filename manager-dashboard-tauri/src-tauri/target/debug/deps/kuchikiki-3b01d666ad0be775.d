@@ -1,0 +1,13 @@
+/workspace/manager-dashboard-tauri/src-tauri/target/debug/deps/libkuchikiki-3b01d666ad0be775.rmeta: /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/lib.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/attributes.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/cell_extras.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/iter.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/node_data_ref.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/parser.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/select.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/serializer.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/tree.rs
+
+/workspace/manager-dashboard-tauri/src-tauri/target/debug/deps/kuchikiki-3b01d666ad0be775.d: /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/lib.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/attributes.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/cell_extras.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/iter.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/node_data_ref.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/parser.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/select.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/serializer.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/tree.rs
+
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/lib.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/attributes.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/cell_extras.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/iter.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/node_data_ref.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/parser.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/select.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/serializer.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/kuchikiki-0.8.2/src/tree.rs:

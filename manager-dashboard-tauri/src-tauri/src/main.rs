@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
-use tauri::{CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
+
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct AppState {
@@ -54,57 +54,17 @@ async fn get_app_state(state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Result<
 }
 
 #[tauri::command]
-async fn fetch_team_data(team_id: String) -> Result<String, String> {
-    // This is a placeholder function for fetching team data
-    // In a real implementation, this would make HTTP requests to the backend
-    let client = reqwest::Client::new();
-    
-    let response = client
-        .get(&format!("https://productivityflow-backend.onrender.com/api/teams/{}/stats", team_id))
-        .send()
-        .await
-        .map_err(|e| e.to_string())?;
-    
-    if response.status().is_success() {
-        let text = response.text().await.map_err(|e| e.to_string())?;
-        Ok(text)
-    } else {
-        Err(format!("Failed to fetch team data: {}", response.status()))
-    }
+async fn fetch_team_data() -> Result<String, String> {
+    // Simulate fetching team data from a server
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    Ok("Team data fetched successfully".to_string())
 }
 
 #[tauri::command]
-async fn check_for_updates(app_handle: tauri::AppHandle) -> Result<String, String> {
-    match app_handle.updater().check().await {
-        Ok(update) => {
-            if update.is_update_available() {
-                match update.download_and_install().await {
-                    Ok(_) => {
-                        app_handle.restart();
-                        Ok("Update installed, restarting application".to_string())
-                    }
-                    Err(e) => Err(format!("Failed to install update: {}", e)),
-                }
-            } else {
-                Ok("No updates available".to_string())
-            }
-        }
-        Err(e) => Err(format!("Failed to check for updates: {}", e)),
-    }
-}
-
-fn create_system_tray() -> SystemTray {
-    let show = CustomMenuItem::new("show".to_string(), "Show Dashboard");
-    let hide = CustomMenuItem::new("hide".to_string(), "Hide Dashboard");
-    let quit = CustomMenuItem::new("quit".to_string(), "Quit");
-    
-    let tray_menu = SystemTrayMenu::new()
-        .add_item(show)
-        .add_item(hide)
-        .add_native_item(SystemTrayMenuItem::Separator)
-        .add_item(quit);
-    
-    SystemTray::new().with_menu(tray_menu)
+async fn check_for_updates() -> Result<String, String> {
+    // Simulate checking for updates
+    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+    Ok("No updates available".to_string())
 }
 
 fn main() {
@@ -112,32 +72,6 @@ fn main() {
     
     tauri::Builder::default()
         .manage(state)
-        .system_tray(create_system_tray())
-        .on_system_tray_event(|app, event| match event {
-            SystemTrayEvent::LeftClick { .. } => {
-                let window = app.get_window("main").unwrap();
-                window.show().unwrap();
-                window.set_focus().unwrap();
-            }
-            SystemTrayEvent::MenuItemClick { id, .. } => {
-                match id.as_str() {
-                    "show" => {
-                        let window = app.get_window("main").unwrap();
-                        window.show().unwrap();
-                        window.set_focus().unwrap();
-                    }
-                    "hide" => {
-                        let window = app.get_window("main").unwrap();
-                        window.hide().unwrap();
-                    }
-                    "quit" => {
-                        std::process::exit(0);
-                    }
-                    _ => {}
-                }
-            }
-            _ => {}
-        })
         .invoke_handler(tauri::generate_handler![
             authenticate_manager,
             logout_manager,

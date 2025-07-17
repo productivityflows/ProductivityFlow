@@ -1,0 +1,18 @@
+/workspace/employee-tracker-tauri/src-tauri/target/debug/deps/libselectors-4a042b4750f0ff01.rmeta: /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/lib.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/attr.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/bloom.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/builder.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/context.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/matching.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/nth_index_cache.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/parser.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/sink.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/tree.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/visitor.rs /workspace/employee-tracker-tauri/src-tauri/target/debug/build/selectors-1f4073370c3b0c42/out/ascii_case_insensitive_html_attributes.rs
+
+/workspace/employee-tracker-tauri/src-tauri/target/debug/deps/selectors-4a042b4750f0ff01.d: /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/lib.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/attr.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/bloom.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/builder.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/context.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/matching.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/nth_index_cache.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/parser.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/sink.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/tree.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/visitor.rs /workspace/employee-tracker-tauri/src-tauri/target/debug/build/selectors-1f4073370c3b0c42/out/ascii_case_insensitive_html_attributes.rs
+
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/lib.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/attr.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/bloom.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/builder.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/context.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/matching.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/nth_index_cache.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/parser.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/sink.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/tree.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/selectors-0.22.0/visitor.rs:
+/workspace/employee-tracker-tauri/src-tauri/target/debug/build/selectors-1f4073370c3b0c42/out/ascii_case_insensitive_html_attributes.rs:
+
+# env-dep:OUT_DIR=/workspace/employee-tracker-tauri/src-tauri/target/debug/build/selectors-1f4073370c3b0c42/out

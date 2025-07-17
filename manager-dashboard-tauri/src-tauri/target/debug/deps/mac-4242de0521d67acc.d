@@ -1,0 +1,12 @@
+/workspace/manager-dashboard-tauri/src-tauri/target/debug/deps/libmac-4242de0521d67acc.rmeta: /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/lib.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/test.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/mem.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/format.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/syntax_ext.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/matches.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/inspect.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/cfg.rs
+
+/workspace/manager-dashboard-tauri/src-tauri/target/debug/deps/mac-4242de0521d67acc.d: /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/lib.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/test.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/mem.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/format.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/syntax_ext.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/matches.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/inspect.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/cfg.rs
+
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/lib.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/test.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/mem.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/format.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/syntax_ext.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/matches.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/inspect.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/mac-0.1.1/src/cfg.rs:
