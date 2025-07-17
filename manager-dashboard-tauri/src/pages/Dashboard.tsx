@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { Users, Clock, TrendingUp, Target } from 'lucide-react';
+import { Users, Clock, TrendingUp, Target, AlertCircle, Loader2 } from 'lucide-react';
 
 // Updated to use the correct backend URL
 const API_URL = "https://productivityflow-backend.onrender.com";
@@ -61,18 +61,39 @@ export default function DashboardPage() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [performance, setPerformance] = useState<Performance | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     // Fetch analytics for the first team found
     const fetchAnalytics = async () => {
       try {
         setLoading(true);
+        setError(null);
         console.log("Fetching teams...");
         
-        const teamsResponse = await fetch(`${API_URL}/api/teams`);
+        // Add timeout for requests
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        
+        const teamsResponse = await fetch(`${API_URL}/api/teams`, {
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        clearTimeout(timeoutId);
         
         if (!teamsResponse.ok) {
-          throw new Error(`Teams API error: ${teamsResponse.status}`);
+          if (teamsResponse.status === 401) {
+            throw new Error("Authentication required. Please log in again.");
+          } else if (teamsResponse.status >= 500) {
+            throw new Error("Server error. Please try again later.");
+          } else {
+            throw new Error(`Failed to fetch teams (${teamsResponse.status})`);
+          }
         }
         
         const teamsData = await teamsResponse.json();
@@ -80,43 +101,83 @@ export default function DashboardPage() {
         
         // Handle API errors gracefully
         if (teamsData.error) {
-          console.error("Teams API error:", teamsData.error);
-          return;
+          throw new Error(teamsData.error);
         }
         
         const teams = teamsData.teams || [];
         
-        if (teams.length > 0) {
-          const firstTeamId = teams[0].id;
-          console.log("Fetching stats for team:", firstTeamId);
-          
-          // Fetch both analytics and performance data
-          const [analyticsResponse, performanceResponse] = await Promise.all([
-            fetch(`${API_URL}/api/teams/${firstTeamId}/stats`),
-            fetch(`${API_URL}/api/teams/${firstTeamId}/performance`)
-          ]);
-          
-          // Check if responses are OK
-          if (analyticsResponse.ok) {
-            const analyticsData = await analyticsResponse.json();
-            console.log("Analytics data:", analyticsData);
-            setAnalytics(analyticsData);
-          } else {
-            console.error("Analytics API error:", analyticsResponse.status);
-          }
-          
-          if (performanceResponse.ok) {
-            const performanceData = await performanceResponse.json();
-            console.log("Performance data:", performanceData);
-            setPerformance(performanceData);
-          } else {
-            console.error("Performance API error:", performanceResponse.status);
-          }
-        } else {
-          console.log("No teams found");
+        if (teams.length === 0) {
+          setError("No teams found. Create a team to get started.");
+          return;
         }
-      } catch (error) {
+        
+        const firstTeamId = teams[0].id;
+        console.log("Fetching stats for team:", firstTeamId);
+        
+        // Fetch both analytics and performance data with timeout
+        const fetchWithTimeout = (url: string) => {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
+          
+          return fetch(url, { 
+            signal: controller.signal,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            }
+          }).finally(() => clearTimeout(timeoutId));
+        };
+        
+        const [analyticsResponse, performanceResponse] = await Promise.allSettled([
+          fetchWithTimeout(`${API_URL}/api/teams/${firstTeamId}/stats`),
+          fetchWithTimeout(`${API_URL}/api/teams/${firstTeamId}/performance`)
+        ]);
+        
+        // Handle analytics response
+        if (analyticsResponse.status === 'fulfilled' && analyticsResponse.value.ok) {
+          const analyticsData = await analyticsResponse.value.json();
+          console.log("Analytics data:", analyticsData);
+          setAnalytics(analyticsData);
+        } else {
+          console.error("Failed to fetch analytics:", analyticsResponse);
+          // Set default analytics to prevent white screen
+          setAnalytics({
+            totalHours: 0,
+            avgProductivity: 0,
+            goalsCompleted: 0,
+            activeMembers: 0,
+            totalMembers: teams[0]?.memberCount || 0
+          });
+        }
+        
+        // Handle performance response
+        if (performanceResponse.status === 'fulfilled' && performanceResponse.value.ok) {
+          const performanceData = await performanceResponse.value.json();
+          console.log("Performance data:", performanceData);
+          setPerformance(performanceData);
+        } else {
+          console.error("Failed to fetch performance:", performanceResponse);
+          // Set default performance to prevent white screen
+          setPerformance({
+            topPerformers: [],
+            needsImprovement: []
+          });
+        }
+        
+      } catch (error: any) {
         console.error("Error fetching analytics:", error);
+        
+        let errorMessage = "Failed to load dashboard data. Please try again.";
+        
+        if (error.name === 'AbortError') {
+          errorMessage = "Request timed out. Please check your connection.";
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage = "Cannot connect to server. Please check your internet connection.";
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -128,7 +189,11 @@ export default function DashboardPage() {
     const interval = setInterval(fetchAnalytics, 30000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [retryCount]);
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+  };
 
   const displayValue = (value: number | null | undefined, suffix = '') => {
     if (loading) return '...';
@@ -199,6 +264,63 @@ export default function DashboardPage() {
       </div>
     );
   };
+
+  // Show error state
+  if (error && !loading) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-800">Welcome back, Manager!</h1>
+          <p className="text-gray-500">Dashboard</p>
+        </div>
+        
+        <Card className="border-red-200">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to Load Dashboard</h3>
+            <p className="text-gray-600 text-center mb-4 max-w-md">{error}</p>
+            <button
+              onClick={handleRetry}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              <span>Try Again</span>
+            </button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-800">Welcome back, Manager!</h1>
+          <p className="text-gray-500">Loading your dashboard...</p>
+        </div>
+        
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardContent className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">Loading performance data...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

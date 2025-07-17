@@ -73,6 +73,26 @@ async fn fetch_team_data(team_id: String) -> Result<String, String> {
     }
 }
 
+#[tauri::command]
+async fn check_for_updates(app_handle: tauri::AppHandle) -> Result<String, String> {
+    match app_handle.updater().check().await {
+        Ok(update) => {
+            if update.is_update_available() {
+                match update.download_and_install().await {
+                    Ok(_) => {
+                        app_handle.restart();
+                        Ok("Update installed, restarting application".to_string())
+                    }
+                    Err(e) => Err(format!("Failed to install update: {}", e)),
+                }
+            } else {
+                Ok("No updates available".to_string())
+            }
+        }
+        Err(e) => Err(format!("Failed to check for updates: {}", e)),
+    }
+}
+
 fn create_system_tray() -> SystemTray {
     let show = CustomMenuItem::new("show".to_string(), "Show Dashboard");
     let hide = CustomMenuItem::new("hide".to_string(), "Hide Dashboard");
@@ -122,7 +142,8 @@ fn main() {
             authenticate_manager,
             logout_manager,
             get_app_state,
-            fetch_team_data
+            fetch_team_data,
+            check_for_updates
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

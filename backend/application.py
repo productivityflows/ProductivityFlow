@@ -110,21 +110,36 @@ application.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER'
 mail = Mail(application)
 
 # --- Enhanced CORS Configuration ---
+# Comprehensive CORS setup to fix all 405 Method Not Allowed and CORS errors
+# This configuration allows both Tauri desktop apps and web browsers to access the API
+# without CORS issues. The setup includes proper preflight handling and response headers.
 CORS(application, 
-     origins=["http://localhost:1420", "http://localhost:1421", "tauri://localhost", "*"],  # Allow Tauri origins
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
-     supports_credentials=False)
+     origins=["http://localhost:1420", "http://localhost:1421", "tauri://localhost", "https://tauri.localhost", "*"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"],
+     supports_credentials=False,
+     expose_headers=["Content-Length", "X-JSON"],
+     max_age=86400)
 
-# Handle preflight OPTIONS requests for all routes
+# Comprehensive preflight OPTIONS handler for all routes
 @application.before_request
 def handle_preflight():
     if request.method == "OPTIONS":
-        response = jsonify({'message': 'OK'})
+        response = jsonify({'status': 'OK', 'message': 'Preflight request successful'})
         response.headers.add("Access-Control-Allow-Origin", "*")
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,Accept,Origin")
-        response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,Accept,Origin,Access-Control-Request-Method,Access-Control-Request-Headers")
+        response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS,PATCH")
+        response.headers.add('Access-Control-Max-Age', "86400")
+        response.status_code = 200
         return response
+
+# Add CORS headers to all responses
+@application.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH')
+    return response
 
 # --- Database Configuration ---
 DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -302,20 +317,50 @@ class DetailedActivity(db.Model):
     # Composite index for efficient queries
     __table_args__ = (db.Index('idx_user_team_timestamp', 'user_id', 'team_id', 'timestamp'),)
 
-# --- Auto-create database tables on startup ---
-with application.app_context():
-    try:
-        # Test database connection first
-        with db.engine.connect() as connection:
-            connection.execute(db.text("SELECT 1"))
-        logging.info("Database connection successful!")
-        
-        # Create tables
-        db.create_all()
-        logging.info("Database tables checked/created successfully!")
-    except Exception as e:
-        logging.error(f"Error with database: {e}")
-        logging.error(f"Database URL: {DATABASE_URL}")
+# --- Robust Database Initialization ---
+def initialize_database():
+    """
+    Initialize database with proper error handling and retries.
+    
+    This function ensures the database is properly connected and all tables
+    are created before the application starts serving requests. It includes
+    retry logic for handling temporary connection issues.
+    
+    Returns:
+        bool: True if initialization successful, False otherwise
+    """
+    max_retries = 3
+    retry_delay = 2
+    
+    for attempt in range(max_retries):
+        try:
+            with application.app_context():
+                # Test database connection first
+                with db.engine.connect() as connection:
+                    connection.execute(db.text("SELECT 1"))
+                logging.info("Database connection successful!")
+                
+                # Create all tables if they don't exist
+                db.create_all()
+                logging.info("Database tables checked/created successfully!")
+                return True
+                
+        except Exception as e:
+            logging.error(f"Database initialization attempt {attempt + 1} failed: {e}")
+            logging.error(f"Database URL: {DATABASE_URL}")
+            
+            if attempt < max_retries - 1:
+                logging.info(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            else:
+                logging.error("All database initialization attempts failed!")
+                return False
+    
+    return False
+
+# Initialize database on startup
+initialize_database()
 
 # --- Utility Functions ---
 def generate_id(prefix):
@@ -937,6 +982,42 @@ def join_team_with_email():
         return jsonify({"error": "Internal Server Error"}), 500
 
 # Add the rest of the original API endpoints
+@application.route('/api/teams', methods=['GET'])
+def get_teams():
+    """Get teams for authenticated user"""
+    try:
+        # Get user info from token
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({"error": "Authorization token required"}), 401
+        
+        token = auth_header.split(' ')[1]
+        try:
+            payload = jwt.decode(token, application.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+            user_id = payload['user_id']
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Invalid token"}), 401
+        
+        # Get teams for user
+        memberships = Membership.query.filter_by(user_id=user_id).all()
+        teams = []
+        
+        for membership in memberships:
+            team = Team.query.get(membership.team_id)
+            if team:
+                teams.append({
+                    "id": team.id,
+                    "name": team.name,
+                    "role": membership.role,
+                    "employee_code": team.employee_code if membership.role == 'manager' else None
+                })
+        
+        return jsonify({"teams": teams}), 200
+        
+    except Exception as e:
+        logging.error(f"Error getting teams: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
+
 @application.route('/api/teams', methods=['POST'])
 def create_team():
     """Create a new team"""
@@ -1160,6 +1241,40 @@ def get_stripe_config():
     return jsonify({
         "publishable_key": STRIPE_PUBLISHABLE_KEY
     }), 200
+
+@application.route('/api/updates/<platform>/<current_version>', methods=['GET'])
+def check_for_updates(platform, current_version):
+    """Check for application updates for Tauri auto-updater"""
+    try:
+        # Latest version - this should come from your version management system
+        latest_version = "0.2.0"
+        
+        # Compare versions (simple string comparison for demo)
+        if current_version < latest_version:
+            # Update available
+            base_url = "https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO_NAME/releases/latest/download"
+            
+            if platform == "darwin":
+                download_url = f"{base_url}/ProductivityFlow-Tracker_{latest_version}_universal.dmg"
+            elif platform == "win32":
+                download_url = f"{base_url}/ProductivityFlow-Tracker_{latest_version}_x64.msi"
+            else:
+                return jsonify({"error": "Unsupported platform"}), 400
+            
+            return jsonify({
+                "version": latest_version,
+                "date": "2024-01-01T00:00:00Z",
+                "body": "Latest improvements and bug fixes",
+                "url": download_url,
+                "signature": ""  # Tauri will handle signing
+            }), 200
+        else:
+            # No update available - return 204 No Content
+            return "", 204
+            
+    except Exception as e:
+        logging.error(f"Error checking for updates: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
 
 # Graceful shutdown
 import atexit

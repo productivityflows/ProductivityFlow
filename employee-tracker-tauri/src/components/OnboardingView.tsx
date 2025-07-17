@@ -22,8 +22,25 @@ export function OnboardingView({ onTeamJoin }: OnboardingViewProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !teamCode.trim()) {
-      setError("Name and team code are required.");
+    
+    // Input validation
+    if (!name.trim()) {
+      setError("Please enter your name.");
+      return;
+    }
+    
+    if (!teamCode.trim()) {
+      setError("Please enter your team code.");
+      return;
+    }
+    
+    if (name.trim().length < 2) {
+      setError("Name must be at least 2 characters long.");
+      return;
+    }
+    
+    if (teamCode.trim().length < 4) {
+      setError("Team code must be at least 4 characters long.");
       return;
     }
 
@@ -34,38 +51,68 @@ export function OnboardingView({ onTeamJoin }: OnboardingViewProps) {
       console.log(`Making request to: ${API_URL}/api/teams/join`);
       console.log(`Request data:`, { name: name.trim(), team_code: teamCode.trim() });
       
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
       const response = await fetch(`${API_URL}/api/teams/join`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json" 
+        },
         body: JSON.stringify({ 
           name: name.trim(), 
           team_code: teamCode.trim() 
-        })
+        }),
+        signal: controller.signal
       });
       
+      clearTimeout(timeoutId);
       console.log(`Response status:`, response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
       
       const data = await response.json();
       console.log(`Response data:`, data);
-      
-      if (!response.ok) {
-        throw new Error(data.error || "An unknown error occurred.");
+
+      // Validate required response fields
+      if (!data.team?.id || !data.user?.id || !data.token) {
+        throw new Error("Invalid response from server. Please try again.");
       }
 
       // Convert the response to the expected format
       const sessionData = {
-        teamId: data.teamId,
-        teamName: data.teamName,
-        userId: data.userId,
-        userName: data.userName,
-        role: data.role,
+        teamId: data.team.id,
+        teamName: data.team.name || "Unknown Team",
+        userId: data.user.id,
+        userName: data.user.name || name.trim(),
+        role: data.user.role || "employee",
         token: data.token
       };
 
       onTeamJoin(sessionData);
     } catch (err: any) {
-      console.error(`Error:`, err);
-      setError(err.message);
+      console.error(`Error joining team:`, err);
+      
+      // Provide user-friendly error messages
+      let errorMessage = "An unexpected error occurred. Please try again.";
+      
+      if (err.name === 'AbortError') {
+        errorMessage = "Request timed out. Please check your connection and try again.";
+      } else if (err.message.includes('Failed to fetch')) {
+        errorMessage = "Cannot connect to server. Please check your internet connection.";
+      } else if (err.message.includes('404')) {
+        errorMessage = "Team code not found. Please check your team code.";
+      } else if (err.message.includes('400')) {
+        errorMessage = "Invalid team code or name. Please check your information.";
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

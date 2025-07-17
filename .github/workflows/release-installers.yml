@@ -226,3 +226,74 @@ jobs:
           asset_path: ./manager-dashboard-windows/ProductivityFlow Manager Dashboard_*.msi
           asset_name: ProductivityFlow-Manager-Dashboard-Windows.msi
           asset_content_type: application/octet-stream
+
+      - name: Generate Updater Manifests
+        run: |
+          # Extract version from tag
+          VERSION=${GITHUB_REF#refs/tags/v}
+          
+          # Generate Employee Tracker manifest
+          cat > latest-employee-tracker.json << EOF
+          {
+            "version": "$VERSION",
+            "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "platforms": {
+              "darwin-x86_64": {
+                "signature": "",
+                "url": "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ProductivityFlow-Employee-Tracker-macOS.dmg"
+              },
+              "darwin-aarch64": {
+                "signature": "",
+                "url": "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ProductivityFlow-Employee-Tracker-macOS.dmg"
+              },
+              "windows-x86_64": {
+                "signature": "",
+                "url": "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ProductivityFlow-Employee-Tracker-Windows.msi"
+              }
+            },
+            "body": "Latest improvements and bug fixes for Employee Tracker"
+          }
+          EOF
+          
+          # Generate Manager Dashboard manifest
+          cat > latest-manager-dashboard.json << EOF
+          {
+            "version": "$VERSION",
+            "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "platforms": {
+              "darwin-x86_64": {
+                "signature": "",
+                "url": "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ProductivityFlow-Manager-Dashboard-macOS.dmg"
+              },
+              "darwin-aarch64": {
+                "signature": "",
+                "url": "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ProductivityFlow-Manager-Dashboard-macOS.dmg"
+              },
+              "windows-x86_64": {
+                "signature": "",
+                "url": "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ProductivityFlow-Manager-Dashboard-Windows.msi"
+              }
+            },
+            "body": "Latest improvements and bug fixes for Manager Dashboard"
+          }
+          EOF
+
+      - name: Upload Employee Tracker Updater Manifest
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./latest-employee-tracker.json
+          asset_name: latest-employee-tracker.json
+          asset_content_type: application/json
+
+      - name: Upload Manager Dashboard Updater Manifest
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./latest-manager-dashboard.json
+          asset_name: latest-manager-dashboard.json
+          asset_content_type: application/json

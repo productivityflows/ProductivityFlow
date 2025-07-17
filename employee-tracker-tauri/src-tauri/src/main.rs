@@ -80,6 +80,26 @@ async fn get_current_activity() -> Result<ActivityData, String> {
 }
 
 #[tauri::command]
+async fn check_for_updates(app_handle: tauri::AppHandle) -> Result<String, String> {
+    match app_handle.updater().check().await {
+        Ok(update) => {
+            if update.is_update_available() {
+                match update.download_and_install().await {
+                    Ok(_) => {
+                        app_handle.restart();
+                        Ok("Update installed, restarting application".to_string())
+                    }
+                    Err(e) => Err(format!("Failed to install update: {}", e)),
+                }
+            } else {
+                Ok("No updates available".to_string())
+            }
+        }
+        Err(e) => Err(format!("Failed to check for updates: {}", e)),
+    }
+}
+
+#[tauri::command]
 async fn send_activity_data(
     state: tauri::State<'_, Arc<Mutex<AppState>>>,
     activity: ActivityData,
@@ -209,7 +229,8 @@ fn main() {
             start_tracking,
             stop_tracking,
             get_current_activity,
-            send_activity_data
+            send_activity_data,
+            check_for_updates
         ])
         .setup(|app| {
             let app_handle = app.handle();

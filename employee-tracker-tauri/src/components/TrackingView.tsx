@@ -37,6 +37,8 @@ export function TrackingView({ session, onLogout }: TrackingViewProps) {
   const [currentActivity, setCurrentActivity] = useState<ActivityData | null>(null);
   const [error, setError] = useState("");
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected');
 
   useEffect(() => {
     // Listen for activity updates from the Rust backend
@@ -51,8 +53,13 @@ export function TrackingView({ session, onLogout }: TrackingViewProps) {
   }, []);
 
   const handleStartTracking = async () => {
+    if (isLoading) return;
+    
+    setIsLoading(true);
+    setError("");
+    setConnectionStatus('connecting');
+    
     try {
-      setError("");
       const result = await invoke<string>("start_tracking", {
         userId: session.userId,
         teamId: session.teamId,
@@ -60,23 +67,43 @@ export function TrackingView({ session, onLogout }: TrackingViewProps) {
       });
       
       setIsTracking(true);
+      setConnectionStatus('connected');
       console.log("Tracking started:", result);
     } catch (err: any) {
       console.error("Failed to start tracking:", err);
-      setError(err.toString());
+      setConnectionStatus('disconnected');
+      
+      // Provide user-friendly error messages
+      let errorMessage = "Failed to start tracking. Please try again.";
+      if (err.toString().includes('permission')) {
+        errorMessage = "Permission denied. Please allow the app to monitor your activity.";
+      } else if (err.toString().includes('network')) {
+        errorMessage = "Network error. Please check your internet connection.";
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleStopTracking = async () => {
+    if (isLoading) return;
+    
+    setIsLoading(true);
+    setError("");
+    
     try {
-      setError("");
       const result = await invoke<string>("stop_tracking");
       setIsTracking(false);
       setCurrentActivity(null);
+      setConnectionStatus('disconnected');
       console.log("Tracking stopped:", result);
     } catch (err: any) {
       console.error("Failed to stop tracking:", err);
-      setError(err.toString());
+      setError("Failed to stop tracking. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -88,7 +115,7 @@ export function TrackingView({ session, onLogout }: TrackingViewProps) {
       setLastSyncTime(new Date());
     } catch (err: any) {
       console.error("Failed to get current activity:", err);
-      setError(err.toString());
+      // Don't show error for this background operation unless it's critical
     }
   };
 
@@ -152,11 +179,26 @@ export function TrackingView({ session, onLogout }: TrackingViewProps) {
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-medium">Activity Tracking</h2>
-            <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${isTracking ? 'bg-green-500' : 'bg-gray-400'}`} />
-              <span className="text-sm text-gray-600">
-                {isTracking ? 'Active' : 'Inactive'}
-              </span>
+            <div className="flex items-center space-x-4">
+              {/* Connection Status */}
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${
+                  connectionStatus === 'connected' ? 'bg-green-500' : 
+                  connectionStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' : 
+                  'bg-red-500'
+                }`} />
+                <span className="text-sm text-gray-600 capitalize">
+                  {connectionStatus}
+                </span>
+              </div>
+              
+              {/* Tracking Status */}
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${isTracking ? 'bg-green-500' : 'bg-gray-400'}`} />
+                <span className="text-sm text-gray-600">
+                  {isTracking ? 'Tracking' : 'Stopped'}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -164,24 +206,35 @@ export function TrackingView({ session, onLogout }: TrackingViewProps) {
             {!isTracking ? (
               <button
                 onClick={handleStartTracking}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                disabled={isLoading}
+                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Play className="h-4 w-4" />
-                <span>Start Tracking</span>
+                {isLoading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                ) : (
+                  <Play className="h-4 w-4" />
+                )}
+                <span>{isLoading ? 'Starting...' : 'Start Tracking'}</span>
               </button>
             ) : (
               <button
                 onClick={handleStopTracking}
-                className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                disabled={isLoading}
+                className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Pause className="h-4 w-4" />
-                <span>Stop Tracking</span>
+                {isLoading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                ) : (
+                  <Pause className="h-4 w-4" />
+                )}
+                <span>{isLoading ? 'Stopping...' : 'Stop Tracking'}</span>
               </button>
             )}
             
             <button
               onClick={handleGetCurrentActivity}
-              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+              disabled={!isTracking || isLoading}
+              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Activity className="h-4 w-4" />
               <span>Check Activity</span>
