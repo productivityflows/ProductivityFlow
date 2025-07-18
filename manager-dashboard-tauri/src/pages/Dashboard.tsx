@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Users, Clock, TrendingUp, Target, AlertCircle, Loader2 } from 'lucide-react';
 
 // Updated to use the correct backend URL
-const API_URL = "https://productivityflow-backend.onrender.com";
+const API_URL = "https://productivityflow-backend-v3.onrender.com";
 
 interface StatCardProps {
   title: string;

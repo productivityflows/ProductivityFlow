@@ -7,7 +7,7 @@ import { Users, Crown, Copy, UserPlus, TrendingUp, TrendingDown, Plus } from 'lu
 import EmployeeSummaryModal from '../components/EmployeeSummaryModal';
 
 // Updated to use the correct backend URL
-const API_URL = "https://productivityflow-backend.onrender.com";
+const API_URL = "https://productivityflow-backend-v3.onrender.com";
 
 interface Team {
   id: string;
@@ -47,7 +47,7 @@ export default function TeamManagementPage() {
   const loadTeams = async () => {
     
     try {
-      const response = await fetch(`${API_URL}/api/teams`);
+      const response = await fetch(`${API_URL}/api/teams/public`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -105,14 +105,41 @@ export default function TeamManagementPage() {
       const response = await fetch(`${API_URL}/api/teams`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newTeamName })
+          body: JSON.stringify({ 
+            name: newTeamName.trim(),
+            user_name: "Manager", // Default manager name, can be made configurable
+            role: "manager"
+          })
       });
-      const newTeam = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("Create team response:", data);
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      // Extract team data from the response
+      const newTeam = {
+        id: data.team.id,
+        name: data.team.name,
+        code: data.team.employee_code,
+        memberCount: 1
+      };
+      
       setTeams(prevTeams => [...prevTeams, newTeam]);
       setSelectedTeam(newTeam); // This will automatically save to localStorage
       setNewTeamName("");
+      
+      // Show success message
+      alert(`Team "${newTeam.name}" created successfully! Team code: ${newTeam.code}`);
     } catch (error) {
       console.error("Failed to create team:", error);
+      alert(`Failed to create team: ${error.message}`);
     }
   };
 
