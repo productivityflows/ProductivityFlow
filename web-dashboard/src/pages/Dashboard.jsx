@@ -5,7 +5,7 @@ import { Progress } from '../components/ui/Progress';
 import { Users, Clock, TrendingUp, Target, Plus } from 'lucide-react';
 
 // Updated to use the correct backend URL
-const API_URL = "https://productivityflow-backend.onrender.com";
+const API_URL = "https://productivityflow-backend-v3.onrender.com";
 
 const StatCard = ({ title, value, icon, change, changeText, color }) => {
   const Icon = icon;

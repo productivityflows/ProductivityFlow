@@ -23,7 +23,7 @@ const Input = ({ icon, ...props }) => {
 };
 
 // Updated to use the correct backend URL
-const API_URL = "https://productivityflow-backend.onrender.com";
+const API_URL = "https://productivityflow-backend-v3.onrender.com";
 const VERSION = "2.1.1"; // Version indicator for debugging
 
 export function OnboardingView({ onTeamJoin }) {
