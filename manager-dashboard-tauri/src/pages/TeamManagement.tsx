@@ -139,7 +139,7 @@ export default function TeamManagementPage() {
       alert(`Team "${newTeam.name}" created successfully! Team code: ${newTeam.code}`);
     } catch (error) {
       console.error("Failed to create team:", error);
-      alert(`Failed to create team: ${error.message}`);
+      alert(`Failed to create team: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
