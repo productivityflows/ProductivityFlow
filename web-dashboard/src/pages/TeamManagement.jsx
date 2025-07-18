@@ -7,7 +7,7 @@ import { Users, Crown, Copy, UserPlus, TrendingUp, TrendingDown, Plus } from 'lu
 import EmployeeSummaryModal from '../components/EmployeeSummaryModal';
 
 // Updated to use the correct backend URL
-const API_URL = "https://productivityflow-backend.onrender.com";
+const API_URL = "https://productivityflow-backend-v3.onrender.com";
 
 export default function TeamManagementPage() {
   const [teams, setTeams] = useState([]);
@@ -89,14 +89,31 @@ export default function TeamManagementPage() {
       const response = await fetch(`${API_URL}/api/teams`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newTeamName })
+          body: JSON.stringify({ 
+            name: newTeamName,
+            user_name: 'Manager' // Default user name for team creator
+          })
       });
-      const newTeam = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      const newTeam = data.team ? data : data; // Handle different response formats
       setTeams(prevTeams => [...prevTeams, newTeam]);
       setSelectedTeam(newTeam); // This will automatically save to localStorage
       setNewTeamName("");
+      
+      // Show success message
+      console.log("Team created successfully:", newTeam);
     } catch (error) {
       console.error("Failed to create team:", error);
+      alert(`Failed to create team: ${error.message}`);
     }
   };
 
