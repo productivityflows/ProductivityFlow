@@ -35,9 +35,6 @@
       "http": {
         "all": true,
         "request": true
-      },
-      "updater": {
-        "all": true
       }
     },
     "bundle": {
