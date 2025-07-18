@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import DashboardPage from './pages/Dashboard';
 import TeamManagementPage from './pages/TeamManagement';
+import BillingPage from './pages/Billing';
 import CompliancePage from './pages/Compliance';
 
 interface LayoutProps {
@@ -34,6 +35,8 @@ export default function App() {
         return <DashboardPage />;
       case '/team-management':
         return <TeamManagementPage />;
+      case '/billing':
+        return <BillingPage />;
       case '/compliance':
         return <CompliancePage />;
       default:

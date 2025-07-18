@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, Shield, Activity } from 'lucide-react';
+import { LayoutDashboard, Users, Shield, Activity, CreditCard } from 'lucide-react';
 
 interface NavItem {
   icon: React.ComponentType<any>;
@@ -15,6 +15,7 @@ interface SidebarProps {
 const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/" },
   { icon: Users, label: "Team Management", href: "/team-management" },
+  { icon: CreditCard, label: "Billing", href: "/billing" },
   { icon: Shield, label: "Compliance", href: "/compliance" },
 ];
 

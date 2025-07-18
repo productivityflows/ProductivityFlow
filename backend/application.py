@@ -1181,6 +1181,23 @@ def join_team():
         if not team:
             return jsonify({"error": "Invalid team code"}), 404
         
+        # Check subscription status for lockout
+        subscription = Subscription.query.filter_by(team_id=team.id).first()
+        if subscription and subscription.status in ['expired', 'past_due']:
+            # Allow grace period for past_due (7 days)
+            if subscription.status == 'past_due':
+                grace_period_end = subscription.current_period_end + timedelta(days=7)
+                if datetime.utcnow() > grace_period_end:
+                    return jsonify({
+                        "error": "Team access suspended due to payment failure. Please contact your manager.",
+                        "subscription_status": "expired"
+                    }), 402  # Payment Required
+            elif subscription.status == 'expired':
+                return jsonify({
+                    "error": "Team access suspended due to expired subscription. Please contact your manager.",
+                    "subscription_status": "expired"
+                }), 402  # Payment Required
+        
         # Generate a temporary user ID for the session
         user_id = f"emp_{hashlib.md5((team_code + employee_name).encode()).hexdigest()[:8]}"
         
@@ -1254,6 +1271,23 @@ def submit_activity(team_id):
                 
         except jwt.InvalidTokenError:
             return jsonify({"error": "Invalid token"}), 401
+        
+        # Check subscription status for lockout
+        subscription = Subscription.query.filter_by(team_id=team_id).first()
+        if subscription and subscription.status in ['expired', 'past_due']:
+            # Allow grace period for past_due (7 days)
+            if subscription.status == 'past_due':
+                grace_period_end = subscription.current_period_end + timedelta(days=7)
+                if datetime.utcnow() > grace_period_end:
+                    return jsonify({
+                        "error": "Access suspended due to payment failure. Please contact your manager to update payment information.",
+                        "subscription_status": "expired"
+                    }), 402  # Payment Required
+            elif subscription.status == 'expired':
+                return jsonify({
+                    "error": "Access suspended due to expired subscription. Please contact your manager to renew subscription.",
+                    "subscription_status": "expired"
+                }), 402  # Payment Required
         
         data = request.get_json()
         
@@ -1391,6 +1425,257 @@ def get_stripe_config():
     return jsonify({
         "publishable_key": STRIPE_PUBLISHABLE_KEY
     }), 200
+
+# --- Subscription Management Endpoints ---
+
+@application.route('/api/subscription/status', methods=['GET'])
+@conditional_rate_limit("10 per minute") # Added rate limit for subscription status
+def get_subscription_status():
+    """Get current subscription status for a manager"""
+    try:
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({"error": "Authorization token required"}), 401
+        
+        token = auth_header.split(' ')[1]
+        try:
+            payload = jwt.decode(token, application.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+            user_id = payload['user_id']
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Invalid token"}), 401
+        
+        # Find the user's team
+        user_membership = Membership.query.filter_by(user_id=user_id).first()
+        if not user_membership:
+            return jsonify({"error": "User not a member of any team"}), 404
+        
+        team = Team.query.get(user_membership.team_id)
+        if not team:
+            return jsonify({"error": "Team not found"}), 404
+        
+        # Get subscription for this team
+        subscription = Subscription.query.filter_by(team_id=team.id).first()
+        
+        if not subscription:
+            # Create default trial subscription
+            subscription = Subscription(
+                team_id=team.id,
+                status='trial',
+                employee_count=0,
+                monthly_cost=0.0,
+                current_period_end=datetime.utcnow() + timedelta(days=30)
+            )
+            db.session.add(subscription)
+            db.session.commit()
+        
+        # Count active employees
+        employee_count = Membership.query.filter_by(team_id=team.id, role='employee').count()
+        
+        # Update employee count if different
+        if subscription.employee_count != employee_count:
+            subscription.employee_count = employee_count
+            subscription.monthly_cost = calculate_monthly_cost(employee_count)
+            db.session.commit()
+        
+        # Calculate trial days remaining for trial subscriptions
+        trial_days_remaining = None
+        if subscription.status == 'trial':
+            trial_end = subscription.created_at + timedelta(days=30)
+            trial_days_remaining = max(0, (trial_end - datetime.utcnow()).days)
+            
+            # Auto-expire trial if needed
+            if trial_days_remaining <= 0:
+                subscription.status = 'expired'
+                db.session.commit()
+        
+        return jsonify({
+            "status": subscription.status,
+            "current_period_end": subscription.current_period_end.isoformat(),
+            "employee_count": subscription.employee_count,
+            "price_per_employee": 10.0,  # $10 per employee per month
+            "total_amount": subscription.monthly_cost,
+            "trial_days_remaining": trial_days_remaining
+        }), 200
+        
+    except Exception as e:
+        logging.error(f"Error getting subscription status: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
+
+@application.route('/api/subscription/update-payment', methods=['POST'])
+@conditional_rate_limit("10 per minute") # Added rate limit for payment update
+def update_payment_method():
+    """Create Stripe checkout session for updating payment method"""
+    try:
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({"error": "Authorization token required"}), 401
+        
+        token = auth_header.split(' ')[1]
+        try:
+            payload = jwt.decode(token, application.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+            user_id = payload['user_id']
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Invalid token"}), 401
+        
+        # Find the user's team
+        user_membership = Membership.query.filter_by(user_id=user_id).first()
+        if not user_membership:
+            return jsonify({"error": "User not a member of any team"}), 404
+        
+        team = Team.query.get(user_membership.team_id)
+        if not team:
+            return jsonify({"error": "Team not found"}), 404
+        
+        subscription = Subscription.query.filter_by(team_id=team.id).first()
+        if not subscription:
+            return jsonify({"error": "No subscription found"}), 404
+        
+        # Create Stripe checkout session
+        checkout_session = stripe.checkout.Session.create(
+            mode='subscription',
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {
+                        'name': 'ProductivityFlow - Employee Tracking',
+                        'description': f'Monthly subscription for {subscription.employee_count} employees'
+                    },
+                    'unit_amount': 1000,  # $10.00 in cents
+                    'recurring': {
+                        'interval': 'month'
+                    }
+                },
+                'quantity': subscription.employee_count
+            }],
+            success_url=f"{request.host_url}billing?success=true",
+            cancel_url=f"{request.host_url}billing?canceled=true",
+            metadata={
+                'team_id': team.id,
+                'user_id': user_id
+            }
+        )
+        
+        return jsonify({
+            "checkout_url": checkout_session.url
+        }), 200
+        
+    except Exception as e:
+        logging.error(f"Error creating checkout session: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
+
+@application.route('/api/subscription/customer-portal', methods=['GET'])
+@conditional_rate_limit("10 per minute") # Added rate limit for customer portal
+def customer_portal():
+    """Redirect to Stripe customer portal"""
+    try:
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({"error": "Authorization token required"}), 401
+        
+        token = auth_header.split(' ')[1]
+        try:
+            payload = jwt.decode(token, application.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+            user_id = payload['user_id']
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Invalid token"}), 401
+        
+        # Find the user's team
+        user_membership = Membership.query.filter_by(user_id=user_id).first()
+        if not user_membership:
+            return jsonify({"error": "User not a member of any team"}), 404
+        
+        team = Team.query.get(user_membership.team_id)
+        if not team:
+            return jsonify({"error": "Team not found"}), 404
+        
+        subscription = Subscription.query.filter_by(team_id=team.id).first()
+        if not subscription or not subscription.stripe_subscription_id:
+            return jsonify({"error": "No active subscription found"}), 404
+        
+        # Get Stripe customer ID from subscription
+        stripe_subscription = stripe.Subscription.retrieve(subscription.stripe_subscription_id)
+        customer_id = stripe_subscription.customer
+        
+        # Create customer portal session
+        portal_session = stripe.billing_portal.Session.create(
+            customer=customer_id,
+            return_url=f"{request.host_url}billing"
+        )
+        
+        return jsonify({
+            "portal_url": portal_session.url
+        }), 200
+        
+    except Exception as e:
+        logging.error(f"Error creating customer portal session: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
+
+@application.route('/api/subscription/webhook', methods=['POST'])
+def stripe_webhook():
+    """Handle Stripe webhook events"""
+    payload = request.get_data(as_text=True)
+    sig_header = request.headers.get('Stripe-Signature')
+    
+    try:
+        # Verify webhook signature (you need to set STRIPE_WEBHOOK_SECRET)
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, os.environ.get('STRIPE_WEBHOOK_SECRET')
+        )
+    except ValueError:
+        logging.error("Invalid payload in Stripe webhook")
+        return '', 400
+    except stripe.error.SignatureVerificationError:
+        logging.error("Invalid signature in Stripe webhook")
+        return '', 400
+    
+    # Handle the event
+    if event['type'] == 'subscription.created':
+        subscription_obj = event['data']['object']
+        # Update local subscription record
+        team_id = subscription_obj['metadata'].get('team_id')
+        if team_id:
+            subscription = Subscription.query.filter_by(team_id=team_id).first()
+            if subscription:
+                subscription.stripe_subscription_id = subscription_obj['id']
+                subscription.status = 'active'
+                subscription.current_period_end = datetime.fromtimestamp(subscription_obj['current_period_end'])
+                db.session.commit()
+                
+    elif event['type'] == 'subscription.updated':
+        subscription_obj = event['data']['object']
+        # Update subscription status
+        stripe_sub_id = subscription_obj['id']
+        subscription = Subscription.query.filter_by(stripe_subscription_id=stripe_sub_id).first()
+        if subscription:
+            subscription.status = subscription_obj['status']
+            subscription.current_period_end = datetime.fromtimestamp(subscription_obj['current_period_end'])
+            db.session.commit()
+            
+    elif event['type'] == 'subscription.deleted':
+        subscription_obj = event['data']['object']
+        # Mark subscription as expired
+        stripe_sub_id = subscription_obj['id']
+        subscription = Subscription.query.filter_by(stripe_subscription_id=stripe_sub_id).first()
+        if subscription:
+            subscription.status = 'expired'
+            db.session.commit()
+    
+    elif event['type'] == 'invoice.payment_failed':
+        invoice = event['data']['object']
+        # Mark subscription as past due
+        stripe_sub_id = invoice['subscription']
+        subscription = Subscription.query.filter_by(stripe_subscription_id=stripe_sub_id).first()
+        if subscription:
+            subscription.status = 'past_due'
+            db.session.commit()
+    
+    return '', 200
+
+def calculate_monthly_cost(employee_count):
+    """Calculate monthly cost based on employee count"""
+    return float(employee_count * 10.0)  # $10 per employee per month
+
+# --- Version & Update Endpoints ---
 
 @application.route('/api/updates/<platform>/<current_version>', methods=['GET'])
 def check_for_updates(platform, current_version):
