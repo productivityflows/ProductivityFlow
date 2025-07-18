@@ -32,11 +32,13 @@ application = Flask(__name__)
 
 # --- Enhanced Security & API Key Management ---
 # Initialize encryption for secure API key storage
+# For production, set ENCRYPTION_KEY environment variable:
+# python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY')
 if not ENCRYPTION_KEY:
     # Generate a new key if not provided (for development)
     ENCRYPTION_KEY = Fernet.generate_key()
-    logging.warning("No ENCRYPTION_KEY provided, using generated key (dev only)")
+    logging.warning("No ENCRYPTION_KEY provided, using generated key (dev only). Set ENCRYPTION_KEY environment variable for production.")
 else:
     ENCRYPTION_KEY = ENCRYPTION_KEY.encode()
 
@@ -47,23 +49,37 @@ application.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-
 application.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
 
 # --- Rate Limiting Configuration ---
-# Configure Redis for rate limiting (fallback to memory if Redis not available)
-try:
-    redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379')
-    limiter = Limiter(
-        application,
-        key_func=get_remote_address,
-        storage_uri=redis_url,
-        default_limits=["1000 per hour"]
-    )
-    logging.info("Rate limiting configured with Redis")
-except Exception as e:
-    logging.warning(f"Redis not available, using in-memory rate limiting: {e}")
-    limiter = Limiter(
-        application,
-        key_func=get_remote_address,
-        default_limits=["1000 per hour"]
-    )
+ENABLE_RATE_LIMITING = os.environ.get('ENABLE_RATE_LIMITING', 'false').lower() == 'true'
+
+if ENABLE_RATE_LIMITING:
+    # Configure Redis for rate limiting (fallback to memory if Redis not available)
+    try:
+        redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379')
+        limiter = Limiter(
+            key_func=get_remote_address,
+            app=application,
+            storage_uri=redis_url,
+            default_limits=["1000 per hour"]
+        )
+        logging.info("Rate limiting configured with Redis")
+    except Exception as e:
+        logging.warning(f"Redis not available, using in-memory rate limiting: {e}")
+        limiter = Limiter(
+            key_func=get_remote_address,
+            app=application,
+            default_limits=["1000 per hour"]
+        )
+else:
+    limiter = None
+    logging.info("Rate limiting disabled")
+
+# Conditional rate limiting decorator
+def conditional_rate_limit(limit_string):
+    def decorator(f):
+        if limiter is not None:
+            return limiter.limit(limit_string)(f)
+        return f
+    return decorator
 
 # --- Stripe Configuration ---
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
@@ -800,7 +816,7 @@ def health_check():
 # --- Enhanced Authentication Endpoints ---
 
 @application.route('/api/auth/register', methods=['POST'])
-@limiter.limit("5 per minute")
+@conditional_rate_limit("5 per minute")
 def register_user():
     """Register new user with email/password"""
     try:
@@ -849,7 +865,7 @@ def register_user():
         return jsonify({"error": "Internal Server Error"}), 500
 
 @application.route('/api/auth/login', methods=['POST'])
-@limiter.limit("10 per minute")
+@conditional_rate_limit("10 per minute")
 def login_user():
     """Login user with email/password"""
     try:
@@ -913,7 +929,7 @@ def verify_email():
 # --- Enhanced Team Management with Email Integration ---
 
 @application.route('/api/teams/join-with-email', methods=['POST'])
-@limiter.limit("10 per minute")
+@conditional_rate_limit("10 per minute")
 def join_team_with_email():
     """Join team using email account and team code"""
     try:
@@ -1082,7 +1098,7 @@ def create_team():
 # --- Team Join & Activity Tracking Endpoints ---
 
 @application.route('/api/teams/join', methods=['POST'])
-@limiter.limit("10 per minute")
+@conditional_rate_limit("10 per minute")
 def join_team():
     """Join team using team code (for simple employee tracker without email)"""
     try:
@@ -1148,7 +1164,7 @@ def join_team():
         return jsonify({"error": "Internal Server Error"}), 500
 
 @application.route('/api/teams/<team_id>/activity', methods=['POST'])
-@limiter.limit("120 per minute")  # Higher limit for activity tracking
+@conditional_rate_limit("120 per minute")  # Higher limit for activity tracking
 def submit_activity(team_id):
     """Submit activity data for a team member"""
     try:
