@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { OnboardingView } from "./components/OnboardingView";
 import { TrackingView } from "./components/TrackingView";
 
@@ -54,12 +55,14 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {!session ? (
-        <OnboardingView onTeamJoin={handleTeamJoin} />
-      ) : (
-        <TrackingView session={session} onLogout={handleLogout} />
-      )}
-    </div>
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gray-50">
+        {!session ? (
+          <OnboardingView onTeamJoin={handleTeamJoin} />
+        ) : (
+          <TrackingView session={session} onLogout={handleLogout} />
+        )}
+      </div>
+    </ErrorBoundary>
   );
 }

@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*.*.*'  # Trigger on version tags like v1.0.0, v2.1.3, etc.
 
+env:
+  TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+  TAURI_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
+
 jobs:
   build-employee-tracker:
     strategy:
@@ -32,6 +36,11 @@ jobs:
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './employee-tracker-tauri/src-tauri -> target'
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -43,7 +52,7 @@ jobs:
         run: npm install -g @tauri-apps/cli@^1.5.0
 
       - name: Install frontend dependencies
-        run: npm install
+        run: npm ci
         working-directory: ./employee-tracker-tauri
 
       - name: Build the app
@@ -51,6 +60,7 @@ jobs:
         working-directory: ./employee-tracker-tauri
         env:
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
 
       - name: Upload macOS artifacts
         if: matrix.platform == 'macos-latest'
@@ -60,6 +70,8 @@ jobs:
           path: |
             employee-tracker-tauri/src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
             employee-tracker-tauri/src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app
+            employee-tracker-tauri/src-tauri/target/universal-apple-darwin/release/bundle/updater/*.tar.gz
+            employee-tracker-tauri/src-tauri/target/universal-apple-darwin/release/bundle/updater/*.tar.gz.sig
 
       - name: Upload Windows artifacts
         if: matrix.platform == 'windows-latest'
@@ -68,7 +80,10 @@ jobs:
           name: employee-tracker-windows
           path: |
             employee-tracker-tauri/src-tauri/target/release/bundle/msi/*.msi
+            employee-tracker-tauri/src-tauri/target/release/bundle/msi/*.msi.sig
             employee-tracker-tauri/src-tauri/target/release/bundle/nsis/*.exe
+            employee-tracker-tauri/src-tauri/target/release/bundle/updater/*.msi.zip
+            employee-tracker-tauri/src-tauri/target/release/bundle/updater/*.msi.zip.sig
 
   build-manager-dashboard:
     strategy:
@@ -96,6 +111,11 @@ jobs:
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './manager-dashboard-tauri/src-tauri -> target'
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -107,7 +127,7 @@ jobs:
         run: npm install -g @tauri-apps/cli@^1.5.0
 
       - name: Install frontend dependencies
-        run: npm install
+        run: npm ci
         working-directory: ./manager-dashboard-tauri
 
       - name: Build the app
@@ -115,6 +135,7 @@ jobs:
         working-directory: ./manager-dashboard-tauri
         env:
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
 
       - name: Upload macOS artifacts
         if: matrix.platform == 'macos-latest'
@@ -124,6 +145,8 @@ jobs:
           path: |
             manager-dashboard-tauri/src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
             manager-dashboard-tauri/src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app
+            manager-dashboard-tauri/src-tauri/target/universal-apple-darwin/release/bundle/updater/*.tar.gz
+            manager-dashboard-tauri/src-tauri/target/universal-apple-darwin/release/bundle/updater/*.tar.gz.sig
 
       - name: Upload Windows artifacts
         if: matrix.platform == 'windows-latest'
@@ -132,7 +155,10 @@ jobs:
           name: manager-dashboard-windows
           path: |
             manager-dashboard-tauri/src-tauri/target/release/bundle/msi/*.msi
+            manager-dashboard-tauri/src-tauri/target/release/bundle/msi/*.msi.sig
             manager-dashboard-tauri/src-tauri/target/release/bundle/nsis/*.exe
+            manager-dashboard-tauri/src-tauri/target/release/bundle/updater/*.msi.zip
+            manager-dashboard-tauri/src-tauri/target/release/bundle/updater/*.msi.zip.sig
 
   create-release:
     needs: [build-employee-tracker, build-manager-dashboard]
@@ -206,22 +232,34 @@ jobs:
           # Find Employee Tracker files
           ET_DMG=$(find ./employee-tracker-macos -name "*.dmg" -type f | head -1)
           ET_MSI=$(find ./employee-tracker-windows -name "*.msi" -type f | head -1)
+          ET_MACOS_UPDATER=$(find ./employee-tracker-macos -name "*.tar.gz" -type f | head -1)
+          ET_WIN_UPDATER=$(find ./employee-tracker-windows -name "*.msi.zip" -type f | head -1)
           
           # Find Manager Dashboard files
           MD_DMG=$(find ./manager-dashboard-macos -name "*.dmg" -type f | head -1)
           MD_MSI=$(find ./manager-dashboard-windows -name "*.msi" -type f | head -1)
+          MD_MACOS_UPDATER=$(find ./manager-dashboard-macos -name "*.tar.gz" -type f | head -1)
+          MD_WIN_UPDATER=$(find ./manager-dashboard-windows -name "*.msi.zip" -type f | head -1)
           
           # Set outputs
           echo "et_dmg=$ET_DMG" >> $GITHUB_OUTPUT
           echo "et_msi=$ET_MSI" >> $GITHUB_OUTPUT
+          echo "et_macos_updater=$ET_MACOS_UPDATER" >> $GITHUB_OUTPUT
+          echo "et_win_updater=$ET_WIN_UPDATER" >> $GITHUB_OUTPUT
           echo "md_dmg=$MD_DMG" >> $GITHUB_OUTPUT
           echo "md_msi=$MD_MSI" >> $GITHUB_OUTPUT
+          echo "md_macos_updater=$MD_MACOS_UPDATER" >> $GITHUB_OUTPUT
+          echo "md_win_updater=$MD_WIN_UPDATER" >> $GITHUB_OUTPUT
           
           # Debug output
           echo "Employee Tracker DMG: $ET_DMG"
           echo "Employee Tracker MSI: $ET_MSI"
+          echo "Employee Tracker macOS Updater: $ET_MACOS_UPDATER"
+          echo "Employee Tracker Windows Updater: $ET_WIN_UPDATER"
           echo "Manager Dashboard DMG: $MD_DMG"
           echo "Manager Dashboard MSI: $MD_MSI"
+          echo "Manager Dashboard macOS Updater: $MD_MACOS_UPDATER"
+          echo "Manager Dashboard Windows Updater: $MD_WIN_UPDATER"
 
       - name: Upload Employee Tracker macOS DMG
         if: steps.find_assets.outputs.et_dmg != ''
@@ -267,10 +305,82 @@ jobs:
           asset_name: ProductivityFlow-Manager-Dashboard-Windows.msi
           asset_content_type: application/octet-stream
 
+      - name: Upload Employee Tracker macOS Updater
+        if: steps.find_assets.outputs.et_macos_updater != ''
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.find_assets.outputs.et_macos_updater }}
+          asset_name: ProductivityFlow-Employee-Tracker-macOS.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload Employee Tracker Windows Updater
+        if: steps.find_assets.outputs.et_win_updater != ''
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.find_assets.outputs.et_win_updater }}
+          asset_name: ProductivityFlow-Employee-Tracker-Windows.msi.zip
+          asset_content_type: application/zip
+
+      - name: Upload Manager Dashboard macOS Updater
+        if: steps.find_assets.outputs.md_macos_updater != ''
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.find_assets.outputs.md_macos_updater }}
+          asset_name: ProductivityFlow-Manager-Dashboard-macOS.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload Manager Dashboard Windows Updater
+        if: steps.find_assets.outputs.md_win_updater != ''
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.find_assets.outputs.md_win_updater }}
+          asset_name: ProductivityFlow-Manager-Dashboard-Windows.msi.zip
+          asset_content_type: application/zip
+
       - name: Generate Updater Manifests
         run: |
           # Extract version from tag
           VERSION=${GITHUB_REF#refs/tags/v}
+          
+          # Find and read signature files for Employee Tracker
+          ET_MACOS_SIG=""
+          ET_WIN_SIG=""
+          
+          # Try to find macOS signature file for Employee Tracker
+          if [ -f "./employee-tracker-macos"/*.tar.gz.sig ]; then
+            ET_MACOS_SIG=$(cat "./employee-tracker-macos"/*.tar.gz.sig 2>/dev/null || echo "")
+          fi
+          
+          # Try to find Windows signature file for Employee Tracker
+          if [ -f "./employee-tracker-windows"/*.msi.zip.sig ]; then
+            ET_WIN_SIG=$(cat "./employee-tracker-windows"/*.msi.zip.sig 2>/dev/null || echo "")
+          fi
+          
+          # Find and read signature files for Manager Dashboard
+          MD_MACOS_SIG=""
+          MD_WIN_SIG=""
+          
+          # Try to find macOS signature file for Manager Dashboard
+          if [ -f "./manager-dashboard-macos"/*.tar.gz.sig ]; then
+            MD_MACOS_SIG=$(cat "./manager-dashboard-macos"/*.tar.gz.sig 2>/dev/null || echo "")
+          fi
+          
+          # Try to find Windows signature file for Manager Dashboard
+          if [ -f "./manager-dashboard-windows"/*.msi.zip.sig ]; then
+            MD_WIN_SIG=$(cat "./manager-dashboard-windows"/*.msi.zip.sig 2>/dev/null || echo "")
+          fi
           
           # Generate Employee Tracker manifest
           cat > latest-employee-tracker.json << EOF
@@ -279,16 +389,16 @@ jobs:
             "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "platforms": {
               "darwin-x86_64": {
-                "signature": "",
-                "url": "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ProductivityFlow-Employee-Tracker-macOS.dmg"
+                "signature": "$ET_MACOS_SIG",
+                "url": "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ProductivityFlow-Employee-Tracker-macOS.tar.gz"
               },
               "darwin-aarch64": {
-                "signature": "",
-                "url": "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ProductivityFlow-Employee-Tracker-macOS.dmg"
+                "signature": "$ET_MACOS_SIG",
+                "url": "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ProductivityFlow-Employee-Tracker-macOS.tar.gz"
               },
               "windows-x86_64": {
-                "signature": "",
-                "url": "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ProductivityFlow-Employee-Tracker-Windows.msi"
+                "signature": "$ET_WIN_SIG",
+                "url": "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ProductivityFlow-Employee-Tracker-Windows.msi.zip"
               }
             },
             "body": "Latest improvements and bug fixes for Employee Tracker"
@@ -302,16 +412,16 @@ jobs:
             "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "platforms": {
               "darwin-x86_64": {
-                "signature": "",
-                "url": "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ProductivityFlow-Manager-Dashboard-macOS.dmg"
+                "signature": "$MD_MACOS_SIG",
+                "url": "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ProductivityFlow-Manager-Dashboard-macOS.tar.gz"
               },
               "darwin-aarch64": {
-                "signature": "",
-                "url": "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ProductivityFlow-Manager-Dashboard-macOS.dmg"
+                "signature": "$MD_MACOS_SIG",
+                "url": "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ProductivityFlow-Manager-Dashboard-macOS.tar.gz"
               },
               "windows-x86_64": {
-                "signature": "",
-                "url": "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ProductivityFlow-Manager-Dashboard-Windows.msi"
+                "signature": "$MD_WIN_SIG",
+                "url": "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ProductivityFlow-Manager-Dashboard-Windows.msi.zip"
               }
             },
             "body": "Latest improvements and bug fixes for Manager Dashboard"

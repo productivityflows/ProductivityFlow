@@ -3,15 +3,42 @@
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
     "devPath": "http://localhost:1420",
-    "distDir": "../dist"
+    "distDir": "../dist",
+    "withGlobalTauri": false
   },
   "package": {
     "productName": "ProductivityFlow Tracker",
-    "version": "0.1.0"
+    "version": "2.0.0"
   },
   "tauri": {
     "allowlist": {
-      "all": true
+      "all": false,
+      "shell": {
+        "all": false,
+        "open": true
+      },
+      "window": {
+        "all": false,
+        "close": true,
+        "hide": true,
+        "maximize": true,
+        "minimize": true,
+        "unmaximize": true,
+        "unminimize": true,
+        "show": true,
+        "startDragging": true,
+        "print": false
+      },
+      "notification": {
+        "all": true
+      },
+      "http": {
+        "all": true,
+        "request": true
+      },
+      "updater": {
+        "all": true
+      }
     },
     "bundle": {
       "active": true,
@@ -30,10 +57,11 @@
     },
     "systemTray": {
       "iconPath": "icons/32x32.png",
-      "iconAsTemplate": true
+      "iconAsTemplate": true,
+      "menuOnLeftClick": false
     },
     "updater": {
-      "active": false,
+      "active": true,
       "endpoints": [
         "https://github.com/productivityflows/ProductivityFlow/releases/latest/download/latest-employee-tracker.json"
       ],
@@ -42,9 +70,13 @@
     },
     "windows": [
       {
+        "fullscreen": false,
+        "resizable": true,
         "title": "ProductivityFlow Tracker",
         "width": 400,
-        "height": 600
+        "height": 600,
+        "minWidth": 350,
+        "minHeight": 500
       }
     ]
   }
