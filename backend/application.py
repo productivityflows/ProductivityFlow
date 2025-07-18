@@ -48,8 +48,10 @@ if not ENCRYPTION_KEY:
     # Generate a new key if not provided (for development)
     ENCRYPTION_KEY = Fernet.generate_key()
     logging.warning("No ENCRYPTION_KEY provided, using generated key (dev only). Set ENCRYPTION_KEY environment variable for production.")
+    logging.warning("To generate a production key, run: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\"")
 else:
     ENCRYPTION_KEY = ENCRYPTION_KEY.encode()
+    logging.info("Encryption key loaded from environment variable")
 
 cipher_suite = Fernet(ENCRYPTION_KEY)
 
@@ -58,7 +60,8 @@ application.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-
 application.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
 
 # --- Rate Limiting Configuration ---
-ENABLE_RATE_LIMITING = os.environ.get('ENABLE_RATE_LIMITING', 'false').lower() == 'true'
+# Enable rate limiting by default for production security
+ENABLE_RATE_LIMITING = os.environ.get('ENABLE_RATE_LIMITING', 'true').lower() == 'true'
 
 if ENABLE_RATE_LIMITING:
     # Configure Redis for rate limiting (fallback to memory if Redis not available)
@@ -68,7 +71,7 @@ if ENABLE_RATE_LIMITING:
             key_func=get_remote_address,
             app=application,
             storage_uri=redis_url,
-            default_limits=["1000 per hour"]
+            default_limits=["1000 per hour", "200 per minute"]
         )
         logging.info("Rate limiting configured with Redis")
     except Exception as e:
@@ -76,11 +79,12 @@ if ENABLE_RATE_LIMITING:
         limiter = Limiter(
             key_func=get_remote_address,
             app=application,
-            default_limits=["1000 per hour"]
+            default_limits=["1000 per hour", "200 per minute"]
         )
+        logging.info("Rate limiting enabled with in-memory storage")
 else:
     limiter = None
-    logging.info("Rate limiting disabled")
+    logging.warning("Rate limiting disabled - not recommended for production")
 
 # Conditional rate limiting decorator
 def conditional_rate_limit(limit_string):
@@ -1296,6 +1300,73 @@ def submit_activity(team_id):
     except Exception as e:
         db.session.rollback()
         logging.error(f"Error submitting activity: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
+
+# --- Team Members Endpoint ---
+
+@application.route('/api/teams/<team_id>/members', methods=['GET'])
+def get_team_members(team_id):
+    """Get members of a specific team"""
+    try:
+        # Find the team
+        team = Team.query.get(team_id)
+        if not team:
+            return jsonify({"error": "Team not found"}), 404
+        
+        # Get all memberships for this team
+        memberships = Membership.query.filter_by(team_id=team_id).all()
+        
+        members = []
+        for membership in memberships:
+            # Get activity data for today
+            today = datetime.utcnow().date()
+            activity = Activity.query.filter_by(
+                user_id=membership.user_id,
+                team_id=team_id,
+                date=today
+            ).first()
+            
+            member_data = {
+                "userId": membership.user_id,
+                "name": membership.user_name,
+                "role": membership.role,
+                "productiveHours": activity.productive_hours if activity else 0,
+                "unproductiveHours": activity.unproductive_hours if activity else 0,
+                "goalsCompleted": activity.goals_completed if activity else 0
+            }
+            members.append(member_data)
+        
+        return jsonify({"members": members}), 200
+        
+    except Exception as e:
+        logging.error(f"Error getting team members: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
+
+# --- Public Teams Endpoint (for manager dashboard) ---
+
+@application.route('/api/teams/public', methods=['GET'])
+def get_public_teams():
+    """Get all teams (for demo/development purposes)"""
+    try:
+        teams = Team.query.all()
+        team_list = []
+        
+        for team in teams:
+            # Count members
+            member_count = Membership.query.filter_by(team_id=team.id).count()
+            
+            team_data = {
+                "id": team.id,
+                "name": team.name,
+                "code": team.employee_code,
+                "memberCount": member_count
+            }
+            team_list.append(team_data)
+        
+        return jsonify({"teams": team_list}), 200
+        
+    except Exception as e:
+        logging.error(f"Error getting public teams: {e}")
         return jsonify({"error": "Internal Server Error"}), 500
 
 # --- Version & Update Endpoints ---

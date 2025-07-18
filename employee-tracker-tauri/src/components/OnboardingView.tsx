@@ -12,7 +12,7 @@ interface OnboardingViewProps {
   }) => void;
 }
 
-const API_URL = "https://productivityflow-backend.onrender.com";
+const API_URL = "https://productivityflow-backend-v3.onrender.com";
 
 export function OnboardingView({ onTeamJoin }: OnboardingViewProps) {
   const [name, setName] = useState("");
@@ -61,7 +61,7 @@ export function OnboardingView({ onTeamJoin }: OnboardingViewProps) {
           "Accept": "application/json" 
         },
         body: JSON.stringify({ 
-          name: name.trim(), 
+          employee_name: name.trim(), 
           team_code: teamCode.trim() 
         }),
         signal: controller.signal
