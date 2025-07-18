@@ -1317,11 +1317,7 @@ def init_db():
     except Exception as e:
         logging.error(f"Error creating database tables: {e}")
 
-# Initialize database when the app starts
-@application.before_first_request
-def create_tables():
-    """Create database tables before first request"""
-    init_db()
+# Database initialization is handled by initialize_database() function above
 
 # CLI command for manual database creation
 @application.cli.command('create-db')
