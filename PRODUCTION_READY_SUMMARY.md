@@ -110,7 +110,7 @@ Both desktop applications now include complete updater configuration:
       "https://github.com/{{GITHUB_USERNAME}}/{{REPO_NAME}}/releases/latest/download/latest-employee-tracker.json"
     ],
     "dialog": true,
-    "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY5NkEyMzVBMEY3OENCQjMKUldSTjdYR2NzOHg5cVNyS3VVYXh0Nk5ianphdldzU2Z6Qk5yTm81ekp0TjF6MzZrRWpFUGVuawogCg=="
+    "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDYyRUM0MENEMUNBMjM3MzIKUldReU42SWN6VURzWWdlRWwvYzNJbCtZVVc5K05WNDgrSFJDdVFaMkt2d3A3NDJibUlscm1PakoK"
   }
 }
 ```
