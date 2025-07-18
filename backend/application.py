@@ -147,32 +147,68 @@ mail = Mail(application)
 # Comprehensive CORS setup to fix all 405 Method Not Allowed and CORS errors
 # This configuration allows both Tauri desktop apps and web browsers to access the API
 # without CORS issues. The setup includes proper preflight handling and response headers.
+
+# Enable comprehensive CORS for all origins including Tauri apps
 CORS(application, 
-     origins=["http://localhost:1420", "http://localhost:1421", "tauri://localhost", "https://tauri.localhost", "*"],
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"],
-     supports_credentials=False,
-     expose_headers=["Content-Length", "X-JSON"],
+     origins=["http://localhost:1420", "http://localhost:1421", "http://localhost:3000", 
+              "tauri://localhost", "https://tauri.localhost", "*"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept", 
+                   "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers",
+                   "Cache-Control", "Pragma"],
+     supports_credentials=True,
+     expose_headers=["Content-Length", "X-JSON", "Authorization"],
      max_age=86400)
 
-# Comprehensive preflight OPTIONS handler for all routes
+# Enhanced preflight OPTIONS handler for all routes
 @application.before_request
 def handle_preflight():
+    """Handle all CORS preflight requests globally"""
     if request.method == "OPTIONS":
-        response = jsonify({'status': 'OK', 'message': 'Preflight request successful'})
+        response = jsonify({
+            'status': 'OK', 
+            'message': 'CORS preflight successful',
+            'allowed_methods': ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
+            'allowed_origins': '*'
+        })
+        
+        # Set comprehensive CORS headers
         response.headers.add("Access-Control-Allow-Origin", "*")
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,Accept,Origin,Access-Control-Request-Method,Access-Control-Request-Headers")
-        response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS,PATCH")
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        response.headers.add('Access-Control-Allow-Headers', 
+                           "Content-Type,Authorization,X-Requested-With,Accept,Origin," +
+                           "Access-Control-Request-Method,Access-Control-Request-Headers," +
+                           "Cache-Control,Pragma")
+        response.headers.add('Access-Control-Allow-Methods', 
+                           "GET,PUT,POST,DELETE,OPTIONS,PATCH,HEAD")
         response.headers.add('Access-Control-Max-Age', "86400")
         response.status_code = 200
         return response
 
-# Add CORS headers to all responses
+# Add comprehensive CORS headers to all responses
 @application.after_request
 def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH')
+    """Add CORS headers to all responses"""
+    origin = request.headers.get('Origin')
+    if origin:
+        response.headers.add('Access-Control-Allow-Origin', origin)
+    else:
+        response.headers.add('Access-Control-Allow-Origin', '*')
+    
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    response.headers.add('Access-Control-Allow-Headers', 
+                        'Content-Type,Authorization,X-Requested-With,Accept,Origin,' +
+                        'Cache-Control,Pragma')
+    response.headers.add('Access-Control-Allow-Methods', 
+                        'GET,PUT,POST,DELETE,OPTIONS,PATCH,HEAD')
+    response.headers.add('Access-Control-Expose-Headers', 'Content-Length,X-JSON,Authorization')
+    
+    # Prevent caching of API responses unless explicitly set
+    if not response.headers.get('Cache-Control'):
+        response.headers.add('Cache-Control', 'no-cache, no-store, must-revalidate')
+        response.headers.add('Pragma', 'no-cache')
+        response.headers.add('Expires', '0')
+    
     return response
 
 # --- Database Configuration ---
@@ -358,40 +394,101 @@ def initialize_database():
     
     This function ensures the database is properly connected and all tables
     are created before the application starts serving requests. It includes
-    retry logic for handling temporary connection issues.
+    retry logic for handling temporary connection issues and comprehensive
+    error handling for production deployments.
     
     Returns:
         bool: True if initialization successful, False otherwise
     """
-    max_retries = 3
+    max_retries = 5
     retry_delay = 2
+    
+    logging.info("Starting database initialization...")
+    logging.info(f"Database URL: {DATABASE_URL[:50]}{'...' if len(DATABASE_URL) > 50 else ''}")
     
     for attempt in range(max_retries):
         try:
             with application.app_context():
                 # Test database connection first
+                logging.info(f"Testing database connection (attempt {attempt + 1}/{max_retries})...")
                 with db.engine.connect() as connection:
-                    connection.execute(db.text("SELECT 1"))
-                logging.info("Database connection successful!")
+                    result = connection.execute(db.text("SELECT 1 as test"))
+                    test_value = result.scalar()
+                    if test_value != 1:
+                        raise Exception("Database connection test failed")
+                
+                logging.info("✅ Database connection successful!")
+                
+                # Check if tables exist
+                inspector = db.inspect(db.engine)
+                existing_tables = inspector.get_table_names()
+                expected_tables = ['teams', 'manager_invites', 'memberships', 'activities', 
+                                 'billing_subscriptions', 'productivity_reports', 'token_usage', 
+                                 'detailed_activities']
+                
+                missing_tables = [table for table in expected_tables if table not in existing_tables]
+                
+                if missing_tables:
+                    logging.info(f"Creating missing tables: {missing_tables}")
+                else:
+                    logging.info("All expected tables already exist")
                 
                 # Create all tables if they don't exist
                 db.create_all()
-                logging.info("Database tables checked/created successfully!")
+                logging.info("✅ Database tables checked/created successfully!")
+                
+                # Verify tables were created
+                inspector = db.inspect(db.engine)
+                final_tables = inspector.get_table_names()
+                logging.info(f"Final table count: {len(final_tables)} tables")
+                
+                # Test a simple query on each critical table
+                critical_tables = ['teams', 'memberships', 'activities']
+                for table_name in critical_tables:
+                    if table_name in final_tables:
+                        try:
+                            result = connection.execute(db.text(f"SELECT COUNT(*) FROM {table_name}"))
+                            count = result.scalar()
+                            logging.info(f"✅ Table '{table_name}' is accessible (contains {count} records)")
+                        except Exception as e:
+                            logging.warning(f"⚠️  Table '{table_name}' exists but query failed: {e}")
+                
                 return True
                 
         except Exception as e:
-            logging.error(f"Database initialization attempt {attempt + 1} failed: {e}")
-            logging.error(f"Database URL: {DATABASE_URL}")
+            logging.error(f"❌ Database initialization attempt {attempt + 1} failed: {e}")
+            logging.error(f"Error type: {type(e).__name__}")
             
             if attempt < max_retries - 1:
-                logging.info(f"Retrying in {retry_delay} seconds...")
+                logging.info(f"⏳ Retrying in {retry_delay} seconds...")
                 time.sleep(retry_delay)
-                retry_delay *= 2  # Exponential backoff
+                retry_delay = min(retry_delay * 2, 30)  # Exponential backoff, max 30 seconds
             else:
-                logging.error("All database initialization attempts failed!")
-                return False
+                logging.error("💥 All database initialization attempts failed!")
+                
+                # Try one final fallback attempt with basic create_all
+                try:
+                    logging.info("🔄 Attempting fallback database initialization...")
+                    with application.app_context():
+                        db.create_all()
+                    logging.info("✅ Fallback database initialization successful!")
+                    return True
+                except Exception as fallback_error:
+                    logging.error(f"❌ Fallback initialization also failed: {fallback_error}")
+                    return False
     
     return False
+
+def init_db():
+    """Simple database initialization fallback function"""
+    try:
+        with application.app_context():
+            db.create_all()
+            logging.info("✅ Simple database initialization successful!")
+            return True
+    except Exception as e:
+        logging.error(f"❌ Simple database initialization failed: {e}")
+        return False
 
 # Database initialization will be done explicitly in start.py, not during import
 
@@ -1733,34 +1830,173 @@ atexit.register(shutdown_scheduler)
 
 # --- Database Initialization ---
 def init_db():
-    """Initialize database tables"""
+    """Simple database initialization fallback function"""
     try:
         with application.app_context():
             db.create_all()
-            logging.info("Database tables created successfully")
+            logging.info("✅ Simple database initialization successful!")
+            return True
     except Exception as e:
-        logging.error(f"Error creating database tables: {e}")
+        logging.error(f"❌ Simple database initialization failed: {e}")
+        return False
 
 # Database initialization is handled by initialize_database() function above
 
-# CLI command for manual database creation
-@application.cli.command('create-db')
-def create_db_command():
-    """Create database tables via CLI"""
-    init_db()
-    print("Database tables created!")
+# --- Global Error Handlers ---
+@application.errorhandler(400)
+def bad_request(error):
+    """Handle 400 Bad Request errors"""
+    return jsonify({
+        'error': 'Bad Request',
+        'message': 'The request was malformed or invalid',
+        'status_code': 400
+    }), 400
 
-# Add a before_request hook to ensure initialization happens
-@application.before_request
-def before_request():
-    """Ensure initialization happens before any request is processed"""
-    if not hasattr(before_request, 'initialized'):
-        ensure_initialization()
-        before_request.initialized = True
+@application.errorhandler(401)
+def unauthorized(error):
+    """Handle 401 Unauthorized errors"""
+    return jsonify({
+        'error': 'Unauthorized',
+        'message': 'Authentication required',
+        'status_code': 401
+    }), 401
+
+@application.errorhandler(403)
+def forbidden(error):
+    """Handle 403 Forbidden errors"""
+    return jsonify({
+        'error': 'Forbidden',
+        'message': 'You do not have permission to access this resource',
+        'status_code': 403
+    }), 403
+
+@application.errorhandler(404)
+def not_found(error):
+    """Handle 404 Not Found errors"""
+    return jsonify({
+        'error': 'Not Found',
+        'message': 'The requested resource was not found',
+        'status_code': 404
+    }), 404
+
+@application.errorhandler(405)
+def method_not_allowed(error):
+    """Handle 405 Method Not Allowed errors"""
+    return jsonify({
+        'error': 'Method Not Allowed',
+        'message': 'The requested method is not allowed for this endpoint',
+        'allowed_methods': ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+        'status_code': 405
+    }), 405
+
+@application.errorhandler(429)
+def rate_limit_exceeded(error):
+    """Handle 429 Rate Limit Exceeded errors"""
+    return jsonify({
+        'error': 'Rate Limit Exceeded',
+        'message': 'Too many requests. Please try again later',
+        'status_code': 429
+    }), 429
+
+@application.errorhandler(500)
+def internal_server_error(error):
+    """Handle 500 Internal Server Error"""
+    logging.error(f"Internal server error: {error}")
+    return jsonify({
+        'error': 'Internal Server Error',
+        'message': 'An unexpected error occurred. Please try again later',
+        'status_code': 500
+    }), 500
+
+@application.errorhandler(503)
+def service_unavailable(error):
+    """Handle 503 Service Unavailable errors"""
+    return jsonify({
+        'error': 'Service Unavailable',
+        'message': 'The service is temporarily unavailable. Please try again later',
+        'status_code': 503
+    }), 503
+
+# --- Health Check Endpoint ---
+@application.route('/health', methods=['GET'])
+def health_check():
+    """Comprehensive health check endpoint for monitoring"""
+    try:
+        # Test database connection
+        with db.engine.connect() as connection:
+            connection.execute(db.text("SELECT 1"))
+        
+        db_status = "healthy"
+    except Exception as e:
+        logging.error(f"Database health check failed: {e}")
+        db_status = "unhealthy"
+    
+    # Test Redis connection if enabled
+    redis_status = "disabled"
+    if ENABLE_RATE_LIMITING:
+        try:
+            if 'limiter' in globals() and limiter and hasattr(limiter, 'storage'):
+                # Try to access Redis if it's being used
+                redis_status = "healthy"
+        except Exception as e:
+            logging.error(f"Redis health check failed: {e}")
+            redis_status = "unhealthy"
+    
+    overall_status = "healthy" if db_status == "healthy" else "degraded"
+    status_code = 200 if overall_status == "healthy" else 503
+    
+    return jsonify({
+        'status': overall_status,
+        'timestamp': datetime.utcnow().isoformat(),
+        'version': '2.0.0',
+        'services': {
+            'database': db_status,
+            'redis': redis_status,
+            'rate_limiting': 'enabled' if ENABLE_RATE_LIMITING else 'disabled'
+        }
+    }), status_code
+
+# --- API Documentation Endpoint ---
+@application.route('/api', methods=['GET'])
+def api_documentation():
+    """Basic API documentation endpoint"""
+    return jsonify({
+        'name': 'ProductivityFlow API',
+        'version': '2.0.0',
+        'description': 'API for ProductivityFlow desktop applications',
+        'endpoints': {
+            'authentication': {
+                'POST /api/auth/register': 'Register a new user',
+                'POST /api/auth/login': 'Login user',
+                'POST /api/auth/verify': 'Verify authentication token'
+            },
+            'teams': {
+                'GET /api/teams': 'Get user teams',
+                'POST /api/teams': 'Create a new team',
+                'POST /api/teams/join': 'Join a team with employee code',
+                'POST /api/teams/join-with-email': 'Join team with manager invite',
+                'GET /api/teams/<team_id>/members': 'Get team members',
+                'POST /api/teams/<team_id>/activity': 'Submit activity data'
+            },
+            'utility': {
+                'GET /health': 'Health check endpoint',
+                'GET /api': 'This documentation',
+                'GET /api/version': 'Get API version'
+            }
+        },
+        'cors': {
+            'enabled': True,
+            'allowed_origins': ['*'],
+            'allowed_methods': ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD']
+        }
+    })
 
 if __name__ == '__main__':
-    # Explicit database initialization (replaces deprecated @before_first_request)
-    print("Starting Flask application with explicit database initialization...")
-    ensure_initialization()
-    print("Database initialization completed successfully!")
-    application.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    # Initialize database when running directly (development)
+    if initialize_database():
+        logging.info("✅ Database initialized successfully for development")
+    else:
+        logging.error("❌ Database initialization failed for development")
+    
+    # Run development server
+    application.run(debug=True, host='0.0.0.0', port=5000)

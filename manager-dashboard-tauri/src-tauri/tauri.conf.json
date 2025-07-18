@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "ProductivityFlow Manager Dashboard",
-    "version": "0.1.0"
+    "version": "2.0.0"
   },
   "tauri": {
     "allowlist": {
@@ -35,6 +35,9 @@
       "http": {
         "all": true,
         "request": true
+      },
+      "updater": {
+        "all": true
       }
     },
     "bundle": {
@@ -53,7 +56,7 @@
       "csp": null
     },
     "updater": {
-      "active": false,
+      "active": true,
       "endpoints": [
         "https://github.com/productivityflows/ProductivityFlow/releases/latest/download/latest-manager-dashboard.json"
       ],
