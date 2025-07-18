@@ -384,8 +384,28 @@ def initialize_database():
     
     return False
 
-# Initialize database on startup
-initialize_database()
+# Database initialization will be done explicitly in start.py, not during import
+
+def create_app():
+    """Application factory function for proper initialization"""
+    # Initialize database tables
+    try:
+        with application.app_context():
+            if initialize_database():
+                logging.info("Database initialization successful in create_app")
+            else:
+                logging.warning("Database initialization failed in create_app")
+    except Exception as e:
+        logging.error(f"Database initialization error in create_app: {e}")
+    
+    # Initialize scheduler only once
+    try:
+        init_scheduler()
+        logging.info("Scheduler initialization successful in create_app")
+    except Exception as e:
+        logging.error(f"Scheduler initialization error in create_app: {e}")
+    
+    return application
 
 # --- Utility Functions ---
 def generate_id(prefix):
@@ -790,21 +810,54 @@ def generate_hourly_reports():
         logging.error(f"Error generating hourly reports: {e}")
 
 # Initialize background scheduler
-try:
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(func=cleanup_old_reports, trigger="cron", hour=2, minute=0)  # Daily at 2 AM
-    scheduler.add_job(func=generate_hourly_reports, trigger="cron", minute=0)  # Every hour
-    scheduler.start()
-    logging.info("Background scheduler started successfully")
-except Exception as e:
-    logging.error(f"Failed to start background scheduler: {e}")
-    scheduler = None
+scheduler = None
+_db_initialized = False
+_scheduler_initialized = False
+
+def init_scheduler():
+    """Initialize scheduler only once in the main process"""
+    global scheduler, _scheduler_initialized
+    if not _scheduler_initialized:
+        try:
+            scheduler = BackgroundScheduler()
+            scheduler.add_job(func=cleanup_old_reports, trigger="cron", hour=2, minute=0)  # Daily at 2 AM
+            scheduler.add_job(func=generate_hourly_reports, trigger="cron", minute=0)  # Every hour
+            scheduler.start()
+            _scheduler_initialized = True
+            logging.info("Background scheduler started successfully")
+        except Exception as e:
+            logging.error(f"Failed to start background scheduler: {e}")
+            scheduler = None
+    return scheduler
+
+def ensure_initialization():
+    """Ensure database and scheduler are initialized exactly once"""
+    global _db_initialized, _scheduler_initialized
+    
+    # Initialize database if not already done
+    if not _db_initialized:
+        try:
+            with application.app_context():
+                if initialize_database():
+                    _db_initialized = True
+                    logging.info("Database initialization completed")
+                else:
+                    logging.error("Database initialization failed")
+        except Exception as e:
+            logging.error(f"Database initialization error: {e}")
+    
+    # Initialize scheduler if not already done
+    if not _scheduler_initialized:
+        init_scheduler()
 
 # --- API Endpoints ---
 @application.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint for monitoring"""
     try:
+        # Ensure initialization on first request
+        ensure_initialization()
+        
         # Test database connection
         with db.engine.connect() as connection:
             connection.execute(db.text("SELECT 1"))
@@ -812,6 +865,7 @@ def health_check():
         return jsonify({
             "status": "healthy",
             "database": "connected",
+            "scheduler": "running" if _scheduler_initialized else "not initialized",
             "timestamp": datetime.utcnow().isoformat()
         }), 200
     except Exception as e:
@@ -1335,9 +1389,17 @@ def create_db_command():
     init_db()
     print("Database tables created!")
 
+# Add a before_request hook to ensure initialization happens
+@application.before_request
+def before_request():
+    """Ensure initialization happens before any request is processed"""
+    if not hasattr(before_request, 'initialized'):
+        ensure_initialization()
+        before_request.initialized = True
+
 if __name__ == '__main__':
     # Explicit database initialization (replaces deprecated @before_first_request)
     print("Starting Flask application with explicit database initialization...")
-    init_db()
+    ensure_initialization()
     print("Database initialization completed successfully!")
     application.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
