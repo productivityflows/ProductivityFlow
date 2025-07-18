@@ -49,6 +49,8 @@ jobs:
       - name: Build the app
         run: npm run tauri build -- ${{ matrix.args }}
         working-directory: ./employee-tracker-tauri
+        env:
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
 
       - name: Upload macOS artifacts
         if: matrix.platform == 'macos-latest'
@@ -111,6 +113,8 @@ jobs:
       - name: Build the app
         run: npm run tauri build -- ${{ matrix.args }}
         working-directory: ./manager-dashboard-tauri
+        env:
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
 
       - name: Upload macOS artifacts
         if: matrix.platform == 'macos-latest'
