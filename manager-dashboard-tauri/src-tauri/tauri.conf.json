@@ -53,7 +53,7 @@
       "csp": null
     },
     "updater": {
-      "active": true,
+      "active": false,
       "endpoints": [
         "https://github.com/productivityflows/ProductivityFlow/releases/latest/download/latest-manager-dashboard.json"
       ],
