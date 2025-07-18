@@ -145,7 +145,16 @@ jobs:
         uses: actions/download-artifact@v4
 
       - name: Display structure of downloaded files
-        run: ls -la
+        run: |
+          echo "Root directory:"
+          ls -la
+          echo "Employee tracker artifacts:"
+          find ./employee-tracker-macos -type f -name "*.dmg" -o -name "*.msi" 2>/dev/null || echo "No employee tracker artifacts found"
+          echo "Manager dashboard artifacts:"
+          find ./manager-dashboard-macos -type f -name "*.dmg" -o -name "*.msi" 2>/dev/null || echo "No manager dashboard artifacts found"
+          echo "Windows artifacts:"
+          find ./employee-tracker-windows -type f -name "*.msi" -o -name "*.exe" 2>/dev/null || echo "No windows artifacts found"
+          find ./manager-dashboard-windows -type f -name "*.msi" -o -name "*.exe" 2>/dev/null || echo "No windows artifacts found"
 
       - name: Create Release
         id: create_release
@@ -191,43 +200,70 @@ jobs:
           draft: false
           prerelease: false
 
+      - name: Find Asset Files
+        id: find_assets
+        run: |
+          # Find Employee Tracker files
+          ET_DMG=$(find ./employee-tracker-macos -name "*.dmg" -type f | head -1)
+          ET_MSI=$(find ./employee-tracker-windows -name "*.msi" -type f | head -1)
+          
+          # Find Manager Dashboard files
+          MD_DMG=$(find ./manager-dashboard-macos -name "*.dmg" -type f | head -1)
+          MD_MSI=$(find ./manager-dashboard-windows -name "*.msi" -type f | head -1)
+          
+          # Set outputs
+          echo "et_dmg=$ET_DMG" >> $GITHUB_OUTPUT
+          echo "et_msi=$ET_MSI" >> $GITHUB_OUTPUT
+          echo "md_dmg=$MD_DMG" >> $GITHUB_OUTPUT
+          echo "md_msi=$MD_MSI" >> $GITHUB_OUTPUT
+          
+          # Debug output
+          echo "Employee Tracker DMG: $ET_DMG"
+          echo "Employee Tracker MSI: $ET_MSI"
+          echo "Manager Dashboard DMG: $MD_DMG"
+          echo "Manager Dashboard MSI: $MD_MSI"
+
       - name: Upload Employee Tracker macOS DMG
+        if: steps.find_assets.outputs.et_dmg != ''
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./employee-tracker-macos/ProductivityFlow Tracker_*.dmg
+          asset_path: ${{ steps.find_assets.outputs.et_dmg }}
           asset_name: ProductivityFlow-Employee-Tracker-macOS.dmg
           asset_content_type: application/octet-stream
 
       - name: Upload Employee Tracker Windows MSI
+        if: steps.find_assets.outputs.et_msi != ''
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./employee-tracker-windows/ProductivityFlow Tracker_*.msi
+          asset_path: ${{ steps.find_assets.outputs.et_msi }}
           asset_name: ProductivityFlow-Employee-Tracker-Windows.msi
           asset_content_type: application/octet-stream
 
       - name: Upload Manager Dashboard macOS DMG
+        if: steps.find_assets.outputs.md_dmg != ''
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./manager-dashboard-macos/ProductivityFlow Manager Dashboard_*.dmg
+          asset_path: ${{ steps.find_assets.outputs.md_dmg }}
           asset_name: ProductivityFlow-Manager-Dashboard-macOS.dmg
           asset_content_type: application/octet-stream
 
       - name: Upload Manager Dashboard Windows MSI
+        if: steps.find_assets.outputs.md_msi != ''
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./manager-dashboard-windows/ProductivityFlow Manager Dashboard_*.msi
+          asset_path: ${{ steps.find_assets.outputs.md_msi }}
           asset_name: ProductivityFlow-Manager-Dashboard-Windows.msi
           asset_content_type: application/octet-stream
 
