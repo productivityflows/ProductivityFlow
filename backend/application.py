@@ -1,5 +1,14 @@
 import os
+import flask
 from flask import Flask, request, jsonify
+
+# Flask version compatibility check
+print(f"Flask version: {flask.__version__}")
+if hasattr(flask.Flask, 'before_first_request'):
+    print("WARNING: before_first_request is available but not used (deprecated)")
+else:
+    print("INFO: before_first_request not available (Flask 3.0+) - using modern initialization")
+
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import random
@@ -1327,6 +1336,8 @@ def create_db_command():
     print("Database tables created!")
 
 if __name__ == '__main__':
-    # Initialize database tables
+    # Explicit database initialization (replaces deprecated @before_first_request)
+    print("Starting Flask application with explicit database initialization...")
     init_db()
-    application.run(debug=True)
+    print("Database initialization completed successfully!")
+    application.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
