@@ -67,6 +67,11 @@ if ENABLE_RATE_LIMITING:
     # Configure Redis for rate limiting (fallback to memory if Redis not available)
     try:
         redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379')
+        # Test the Redis connection before using it
+        import redis
+        redis_client = redis.from_url(redis_url)
+        redis_client.ping()  # This will raise an exception if Redis is not available
+        
         limiter = Limiter(
             key_func=get_remote_address,
             app=application,
