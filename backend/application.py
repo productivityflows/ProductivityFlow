@@ -29,19 +29,38 @@ from flask_mail import Mail, Message
 from apscheduler.schedulers.background import BackgroundScheduler
 import json
 import base64
+import sys
 
 # Load environment variables
 load_dotenv()
 
-# Setup logging for Railway
+# Enhanced Railway logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)  # Ensure logs go to Railway console
+    ]
 )
 logger = logging.getLogger(__name__)
 
-# Railway-specific logging
-logger.info("Starting ProductivityFlow backend on Railway")
+# Railway-specific startup logging
+logger.info("🚀 Starting ProductivityFlow backend on Railway")
+logger.info(f"Python version: {sys.version}")
+logger.info(f"Flask version: {flask.__version__}")
+
+# Check critical environment variables
+required_env_vars = ['SECRET_KEY', 'JWT_SECRET_KEY', 'ENCRYPTION_KEY']
+missing_vars = [var for var in required_env_vars if not os.environ.get(var)]
+if missing_vars:
+    logger.warning(f"⚠️ Missing environment variables: {missing_vars}")
+    logger.warning("These should be set in Railway dashboard for production")
+
+# Check DATABASE_URL
+if os.environ.get('DATABASE_URL'):
+    logger.info("✅ DATABASE_URL found - PostgreSQL will be used")
+else:
+    logger.warning("⚠️ No DATABASE_URL found - will use SQLite (development only)")
 
 application = Flask(__name__)
 
@@ -396,16 +415,39 @@ class DetailedActivity(db.Model):
 
 # --- Robust Database Initialization ---
 def initialize_database():
-    """Simple database initialization for Railway deployment"""
-    try:
-        with application.app_context():
-            # Create all tables
-            db.create_all()
-            logging.info("Database tables created successfully")
-            return True
-    except Exception as e:
-        logging.error(f"Database initialization failed: {e}")
-        return False
+    """Enhanced database initialization for Railway deployment with retry logic"""
+    max_retries = 3
+    retry_delay = 2
+    
+    for attempt in range(max_retries):
+        try:
+            with application.app_context():
+                # Test database connection first
+                db.engine.execute("SELECT 1")
+                logger.info("✅ Database connection test successful")
+                
+                # Create all tables
+                db.create_all()
+                logger.info("✅ Database tables created successfully")
+                
+                # Verify tables exist
+                inspector = db.inspect(db.engine)
+                tables = inspector.get_table_names()
+                logger.info(f"✅ Database initialized with {len(tables)} tables: {tables}")
+                
+                return True
+                
+        except Exception as e:
+            logger.error(f"❌ Database initialization attempt {attempt + 1} failed: {e}")
+            if attempt < max_retries - 1:
+                logger.info(f"🔄 Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            else:
+                logger.error("❌ All database initialization attempts failed")
+                return False
+    
+    return False
 
 def init_db():
     """Simple database initialization fallback function"""
