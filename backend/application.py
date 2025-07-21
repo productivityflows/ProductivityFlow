@@ -2,12 +2,11 @@ import os
 import flask
 from flask import Flask, request, jsonify
 
+# Railway-specific optimizations
+os.environ.setdefault('FLASK_ENV', 'production')
+
 # Flask version compatibility check
 print(f"Flask version: {flask.__version__}")
-if hasattr(flask.Flask, 'before_first_request'):
-    print("WARNING: before_first_request is available but not used (deprecated)")
-else:
-    print("INFO: before_first_request not available (Flask 3.0+) - using modern initialization")
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
@@ -34,8 +33,15 @@ import base64
 # Load environment variables
 load_dotenv()
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
+# Setup logging for Railway
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Railway-specific logging
+logger.info("Starting ProductivityFlow backend on Railway")
 
 application = Flask(__name__)
 

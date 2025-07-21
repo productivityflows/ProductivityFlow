@@ -306,14 +306,14 @@ git push origin v1.0.0
 ### Phase 1: Quick Testing (Current State)
 The project is already configured for quick testing:
 
-✅ **Backend**: Deployed on Render (`https://productivityflow-backend-v3.onrender.com`)  
+✅ **Backend**: Deployed on Railway (replacing Render for better reliability)  
 ✅ **Test Data**: Developer codes available for immediate testing  
 ✅ **Build System**: GitHub Actions ready for installer creation  
 
 ### Phase 2: Production Setup (Next Steps)
 
-#### Backend Environment Variables (Render.com)
-Configure these environment variables in your Render dashboard:
+#### Backend Environment Variables (Railway.com)
+Configure these environment variables in your Railway dashboard:
 
 ```bash
 # Required for Production
@@ -505,7 +505,7 @@ DATABASE_URL=postgresql://username:password@localhost:5432/database_name
 
 ## 📝 Developer Notes
 
-- **Backend URL**: `https://productivityflow-backend-v3.onrender.com`
+- **Backend URL**: `https://your-railway-app.railway.app` (after Railway deployment)
 - **Test Codes**: See `DEVELOPER_CODES.md` for current test team codes
 - **Build Artifacts**: Generated in `src-tauri/target/` directories
 - **Log Files**: Check application logs for debugging information

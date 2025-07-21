@@ -1,0 +1,27 @@
+# Railway Environment Variables - ALL 11 VARIABLES
+# Generated on: 2025-07-20 18:30:08.650228
+
+# ESSENTIAL (Required)
+# DATABASE_URL=postgresql://... (Auto-configured by Railway)
+SECRET_KEY=Oop#@wF26dOKouf!BV@twN1qj6H$hKPt
+JWT_SECRET_KEY=HGMszwUEqdYi6TEx29qigOhRgI9kIWYGH87J7LLQX97yTDibIB4klD7Nqv6aRp69QFhwxTeWaT4z_HppiP-zsA
+ENCRYPTION_KEY=nAfcgH43wyxKGBKU9Y0XRsEgW6s9MPY7kAcQoohoMqM=
+FLASK_ENV=production
+ENABLE_RATE_LIMITING=true
+
+# PAYMENT (Stripe)
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_PUBLISHABLE_KEY=pk_live_...
+
+# AI (Claude)
+CLAUDE_API_KEY=sk-ant-...
+
+# EMAIL
+MAIL_SERVER=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your-email@domain.com
+MAIL_PASSWORD=your-app-password
+MAIL_DEFAULT_SENDER=your-email@domain.com
+
+# OPTIONAL
+REDIS_URL=redis://...

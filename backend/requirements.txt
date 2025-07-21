@@ -1,11 +1,11 @@
 # ProductivityFlow Backend Dependencies
-# All versions pinned for production stability
+# Railway-optimized versions for production stability
 
 # Core Flask framework
 Flask==3.0.0
 gunicorn==21.2.0
 
-# Database
+# Database - Railway PostgreSQL compatible
 psycopg2-binary==2.9.9
 SQLAlchemy==2.0.23
 Flask-SQLAlchemy==3.1.1
@@ -31,11 +31,7 @@ anthropic==0.42.0
 Flask-Mail==0.9.1
 
 # Background Tasks and Scheduling
-celery==5.3.4
 APScheduler==3.10.4
 
 # HTTP Client (for healthchecks)
 requests==2.31.0
-
-# Production WSGI server
-waitress==2.1.2
