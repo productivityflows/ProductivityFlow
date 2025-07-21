@@ -218,28 +218,29 @@ def after_request(response):
     return response
 
 # --- Database Configuration ---
+# Use Railway PostgreSQL URL or fallback to SQLite for development
 DATABASE_URL = os.environ.get('DATABASE_URL')
-if not DATABASE_URL:
-    logging.error("DATABASE_URL environment variable is not set!")
-    DATABASE_URL = "sqlite:///fallback.db"  # Fallback for testing
+if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
+    # Railway provides postgres:// but SQLAlchemy expects postgresql://
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
-# Handle Render's postgres:// vs postgresql:// format
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+if DATABASE_URL:
+    application.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+    logging.info("Using PostgreSQL database from DATABASE_URL")
+else:
+    # Fallback to SQLite for development
+    application.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///productivityflow.db'
+    logging.warning("No DATABASE_URL found, using SQLite (development only)")
 
-application.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# Enhanced connection pooling for scalability
 application.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True,
     'pool_recycle': 300,
     'pool_timeout': 20,
-    'max_overflow': 20,  # Increased for better concurrency
-    'pool_size': 10,     # Increased pool size
-    'echo': False        # Disable SQL logging in production
+    'max_overflow': 0
 }
 
+# Initialize database
 db = SQLAlchemy(application)
 
 # --- Enhanced Database Models ---
@@ -395,95 +396,16 @@ class DetailedActivity(db.Model):
 
 # --- Robust Database Initialization ---
 def initialize_database():
-    """
-    Initialize database with proper error handling and retries.
-    
-    This function ensures the database is properly connected and all tables
-    are created before the application starts serving requests. It includes
-    retry logic for handling temporary connection issues and comprehensive
-    error handling for production deployments.
-    
-    Returns:
-        bool: True if initialization successful, False otherwise
-    """
-    max_retries = 5
-    retry_delay = 2
-    
-    logging.info("Starting database initialization...")
-    logging.info(f"Database URL: {DATABASE_URL[:50]}{'...' if len(DATABASE_URL) > 50 else ''}")
-    
-    for attempt in range(max_retries):
-        try:
-            with application.app_context():
-                # Test database connection first
-                logging.info(f"Testing database connection (attempt {attempt + 1}/{max_retries})...")
-                with db.engine.connect() as connection:
-                    result = connection.execute(db.text("SELECT 1 as test"))
-                    test_value = result.scalar()
-                    if test_value != 1:
-                        raise Exception("Database connection test failed")
-                
-                logging.info("✅ Database connection successful!")
-                
-                # Check if tables exist
-                inspector = db.inspect(db.engine)
-                existing_tables = inspector.get_table_names()
-                expected_tables = ['teams', 'manager_invites', 'memberships', 'activities', 
-                                 'billing_subscriptions', 'productivity_reports', 'token_usage', 
-                                 'detailed_activities']
-                
-                missing_tables = [table for table in expected_tables if table not in existing_tables]
-                
-                if missing_tables:
-                    logging.info(f"Creating missing tables: {missing_tables}")
-                else:
-                    logging.info("All expected tables already exist")
-                
-                # Create all tables if they don't exist
-                db.create_all()
-                logging.info("✅ Database tables checked/created successfully!")
-                
-                # Verify tables were created
-                inspector = db.inspect(db.engine)
-                final_tables = inspector.get_table_names()
-                logging.info(f"Final table count: {len(final_tables)} tables")
-                
-                # Test a simple query on each critical table
-                critical_tables = ['teams', 'memberships', 'activities']
-                for table_name in critical_tables:
-                    if table_name in final_tables:
-                        try:
-                            result = connection.execute(db.text(f"SELECT COUNT(*) FROM {table_name}"))
-                            count = result.scalar()
-                            logging.info(f"✅ Table '{table_name}' is accessible (contains {count} records)")
-                        except Exception as e:
-                            logging.warning(f"⚠️  Table '{table_name}' exists but query failed: {e}")
-                
-                return True
-                
-        except Exception as e:
-            logging.error(f"❌ Database initialization attempt {attempt + 1} failed: {e}")
-            logging.error(f"Error type: {type(e).__name__}")
-            
-            if attempt < max_retries - 1:
-                logging.info(f"⏳ Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)
-                retry_delay = min(retry_delay * 2, 30)  # Exponential backoff, max 30 seconds
-            else:
-                logging.error("💥 All database initialization attempts failed!")
-                
-                # Try one final fallback attempt with basic create_all
-                try:
-                    logging.info("🔄 Attempting fallback database initialization...")
-                    with application.app_context():
-                        db.create_all()
-                    logging.info("✅ Fallback database initialization successful!")
-                    return True
-                except Exception as fallback_error:
-                    logging.error(f"❌ Fallback initialization also failed: {fallback_error}")
-                    return False
-    
-    return False
+    """Simple database initialization for Railway deployment"""
+    try:
+        with application.app_context():
+            # Create all tables
+            db.create_all()
+            logging.info("Database tables created successfully")
+            return True
+    except Exception as e:
+        logging.error(f"Database initialization failed: {e}")
+        return False
 
 def init_db():
     """Simple database initialization fallback function"""
@@ -965,11 +887,8 @@ def ensure_initialization():
 # --- API Endpoints ---
 @application.route('/health', methods=['GET'])
 def health_check():
-    """Health check endpoint for monitoring"""
+    """Simple health check endpoint for Railway"""
     try:
-        # Ensure initialization on first request
-        ensure_initialization()
-        
         # Test database connection
         with db.engine.connect() as connection:
             connection.execute(db.text("SELECT 1"))
@@ -977,7 +896,6 @@ def health_check():
         return jsonify({
             "status": "healthy",
             "database": "connected",
-            "scheduler": "running" if _scheduler_initialized else "not initialized",
             "timestamp": datetime.utcnow().isoformat()
         }), 200
     except Exception as e:
